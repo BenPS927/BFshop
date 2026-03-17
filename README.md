@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BF Shop
+
+BF Shop is a full business system built as a modern full-stack web application.
+
+It includes:
+- A customer ecommerce frontend
+- A merchant operations frontend
+- A shared backend and database layer
+- AI enhancements for both customer and merchant workflows
+- AI Overwatch as a centralized control and visibility layer
+- Workflow automation touchpoints with n8n where useful
+
+## Project Vision
+Build an end-to-end commerce operations platform where manual and AI-assisted actions both follow the same backend rules, validation, and audit principles.
+
+## Definition of Full
+BF Shop is considered full when these outcomes are complete:
+1. Orders can be placed on the customer side.
+2. The same orders are received on the merchant side.
+3. Merchant orders move correctly through workflow stages.
+4. Customer chatbot is practically helpful.
+5. Merchant AI assistant orchestrates meaningful time-saving tasks.
+6. AI Overwatch gives one cohesive, centralized view of AI activity and control.
+
+## Architecture Summary
+- Two frontend surfaces: customer and merchant
+- Shared backend contracts and business rule enforcement
+- Database-backed order and fulfillment lifecycle
+- AI assistants integrated through controlled backend tools
+- Overwatch observability and governance for AI-driven actions
+
+Detailed architecture source of truth:
+- [docs/architecture.md](docs/architecture.md)
+
+## Design and UI Standards
+Design decisions are documented as enforceable source-of-truth standards (including spacing, typography, breakpoints, and merchant layout behavior).
+
+Primary design standards:
+- [docs/design-system.md](docs/design-system.md)
+
+## Product Scope
+Product scope, completion criteria, and merchant rendering rules are defined here:
+- [docs/product-scope.md](docs/product-scope.md)
+
+## Technology Direction
+Current stack in this repository:
+- Next.js (App Router)
+- React
+- TypeScript
+- Tailwind CSS
+
+Planned core dependencies for full system scope:
+- Prisma (database access)
+- PostgreSQL-compatible database driver (Postgres or Supabase)
+- Zod (schema and contract validation)
+- n8n (workflow orchestration)
 
 ## Getting Started
+1. Install dependencies:
 
-First, run the development server:
+```bash
+npm install
+```
+
+2. Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Available Scripts
+- npm run dev
+- npm run build
+- npm run start
+- npm run lint
 
-## Learn More
+## Documentation Index
+- [README.md](README.md): Project overview and onboarding entrypoint
+- [docs/product-scope.md](docs/product-scope.md): Scope, completion criteria, and surface responsibilities
+- [docs/architecture.md](docs/architecture.md): Backend/domain architecture and execution lanes
+- [docs/design-system.md](docs/design-system.md): Design rules, spacing, typography, and responsive standards
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Delivery Principle
+Features are only considered complete when they work end-to-end across UI, backend validation, persistence, and observability.
