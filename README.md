@@ -11,10 +11,11 @@ It includes:
 - Workflow automation touchpoints with n8n where useful
 
 ## Project Vision
-Build an end-to-end commerce operations platform where manual and AI-assisted actions both follow the same backend rules, validation, and audit principles.
+Build an end-to-end commerce operations platform where manual and AI-assisted actions both follow the same backend rules, validation, and audit principles, with 
+emphasis on overwatch of AI activity.
 
-## Definition of Full
-BF Shop is considered full when these outcomes are complete:
+## Definition of complete
+BF Shop is considered complete when these outcomes are complete:
 1. Orders can be placed on the customer side.
 2. The same orders are received on the merchant side.
 3. Merchant orders move correctly through workflow stages.
