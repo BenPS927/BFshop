@@ -1,65 +1,103 @@
-import Image from "next/image";
+import Link from "next/link";
+import JsonLd from "./components/shared/jsonld";
 
-export default function Home() {
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "BFshop",
+  description:
+    "End-to-end e-commerce platform with customer and merchant interfaces, workflow automation, and AI enhancement.",
+  url: "https://benfosterdev.com/shop",
+  applicationCategory: "ShoppingApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "GBP",
+  },
+  author: {
+    "@type": "Person",
+    name: "Ben Foster",
+    url: "https://benfosterdev.com",
+  },
+  hasPart: {
+    "@type": "WebApplication",
+    name: "BFshop Merchant",
+    url: "https://bfshop.benfosterdev.com",
+  },
+  isPartOf: {
+    "@type": "WebSite",
+    name: "Ben Foster Dev",
+    url: "https://bfshop.benfosterdev.com",
+  },
+};
+
+export default function BFShop() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <>
+      <JsonLd schema={schema} />
+      <main className="min-h-screen bg-neutral-100 px-4 py-6 text-neutral-950 md:px-6 md:py-8 lg:px-8 lg:py-12">
+        <section className="mx-auto flex max-w-7xl flex-col items-center space-y-6 text-center md:space-y-8 lg:space-y-12">
+          <div className="max-w-2xl">
+            <h1 className="mb-4 font-bebas text-4xl leading-tight tracking-wide md:mb-6 md:text-5xl lg:text-6xl">
+              BF<span className="text-[orange]">SHOP</span>
+            </h1>
+
+            <p className="font-inter text-base leading-relaxed text-gray-600 md:text-lg">
+              Welcome to BFShop, my first AI enhanced business system. The two
+              panels below link to either end of BFShop. Both ends share the
+              same backend, so you can see orders you place in the customer side
+              appear in the merchant side.
+            </p>
+          </div>
+
+          <div className="grid w-full gap-4 md:grid-cols-2 md:gap-6 lg:gap-8">
+            <Link
+              href="/playground/page-one"
+              className="group rounded-2xl border border-neutral-900/15 bg-neutral-900/[0.03] p-4 transition hover:bg-neutral-900/[0.06] md:p-6"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <div className="flex h-full flex-col justify-between">
+                <div>
+                  <h3 className="mb-3 font-inter text-xl font-semibold leading-snug text-[orange] md:mb-4 md:text-2xl lg:text-3xl">
+                    Customer
+                  </h3>
+
+                  <p className="font-inter text-sm leading-relaxed text-gray-500 md:text-base">
+                    Click here for the customer end of BFshop where you can
+                    place orders.
+                  </p>
+                </div>
+
+                <span className="mt-4 font-inter text-sm font-medium text-gray-500 transition group-hover:text-neutral-950 md:text-base">
+                  Enter -&gt;
+                </span>
+              </div>
+            </Link>
+
+            <Link
+              href="/playground/page-two"
+              className="group rounded-2xl border border-neutral-900/15 bg-neutral-900/[0.03] p-4 transition hover:bg-neutral-900/[0.06] md:p-6"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+              <div className="flex h-full flex-col justify-between">
+                <div>
+                  <h3 className="mb-3 font-inter text-xl font-semibold leading-snug text-[orange] md:mb-4 md:text-2xl lg:text-3xl">
+                    Merchant
+                  </h3>
+
+                  <p className="font-inter text-sm leading-relaxed text-gray-500 md:text-base">
+                    This will link to the merchant end of BFshop, which is yet
+                    to be built.
+                  </p>
+                </div>
+
+                <span className="mt-4 font-inter text-sm font-medium text-gray-500 transition group-hover:text-neutral-950 md:text-base">
+                  Enter -&gt;
+                </span>
+              </div>
+            </Link>
+          </div>
+        </section>
       </main>
-    </div>
+    </>
   );
 }
