@@ -53,7 +53,7 @@ export default function BFShop() {
 
           <div className="grid w-full gap-4 md:grid-cols-2 md:gap-6 lg:gap-8">
             <Link
-              href="/playground/page-one"
+              href="/customer"
               className="group rounded-2xl border border-neutral-900/15 bg-neutral-900/[0.03] p-4 transition hover:bg-neutral-900/[0.06] md:p-6"
             >
               <div className="flex h-full flex-col justify-between">
