@@ -30,7 +30,7 @@ export default function OrderPanel(props: OrderPanelProps) {
                         <span>{order.price}</span>
                         <span>{order.date}</span>
                         <span>{order.address}</span>
-                        {children}
+                        
                 </div>
             ))}
         </div>
