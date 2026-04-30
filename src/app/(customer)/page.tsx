@@ -14,7 +14,7 @@ const schema = {
   "@type": "SoftwareApplication",
   "name": "BFshop",
   "description": "End-to-end e-commerce platform with customer and merchant interfaces, workflow automation, and AI enhancement.",
-  "url": "https://benfosterdev.com/shop",
+  "url": "https://bfshop.benfosterdev.com/customer",
   "applicationCategory": "ShoppingApplication",
   "operatingSystem": "Web",
   "offers": {
@@ -27,15 +27,10 @@ const schema = {
     "name": "Ben Foster",
     "url": "https://benfosterdev.com"
   },
-  "hasPart": {
-    "@type": "WebApplication",
-    "name": "BFshop Merchant",
-    "url": "https://bfmerchant.benfosterdev.com"
-  },
   "isPartOf": {
-    "@type": "WebSite",
-    "name": "Ben Foster Dev",
-    "url": "https://benfosterdev.com"
+    "@type": "WebApplication",
+    "name": "BFshop",
+    "url": "https://bfshop.benfosterdev.com"
   }
 }
 
