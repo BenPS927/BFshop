@@ -174,7 +174,8 @@ export default function BFCustomerPage(){
             <div
                 onMouseEnter={() => setIsDesktopCartOpen(true)}
                 onMouseLeave={() => setIsDesktopCartOpen(false)}
-                className={`flex fixed right-0 top-20 z-[100] bg-neutral-200 transition-transform duration-300 max-h-[calc(100vh-6rem)] overflow-hidden ${isDesktopCartOpen ? "translate-x-0" : "translate-x-4/5"}`}
+                className={`flex fixed right-0 top-20 z-[100] bg-neutral-100 text-neutral-900 border border-neutral-300 shadow-lg transition-transform duration-300 max-h-[calc(100vh-6rem)] overflow-hidden ${isDesktopCartOpen ? "translate-x-0" : "translate-x-4/5"}`}
+                style={{ colorScheme: 'light' }}
             >
                 <div className=" w-1/5 p-4 flex items-center justify-center p-8">
                     <ShoppingBasketIcon sx={{ 
@@ -182,40 +183,40 @@ export default function BFCustomerPage(){
                         fontSize: 32
                      }}/>
                 </div>
-                <div className=" w-4/5 p-4 flex flex-col items-center p-8 gap-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden" style={{ direction: 'rtl' }}>
+                <div className=" w-4/5 p-4 flex flex-col items-center p-8 gap-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-neutral-900" style={{ direction: 'rtl' }}>
                     <div className="w-full" style={{ direction: 'ltr' }}>
                         <div className="mb-2 border border-neutral-300 rounded bg-white p-2">
                             <p className="font-inter text-xs text-gray-600">Cart total</p>
-                            <p className="font-inter text-base font-semibold">{formatPrice(cartTotal)}</p>
+                            <p className="font-inter text-base font-semibold text-neutral-950">{formatPrice(cartTotal)}</p>
                         </div>
                         {cartItems.length === 0 ? (
                             <p className="font-inter text-sm text-gray-500">Cart is empty</p>
                         ) : (
                             cartItems.map((cartItem, index) => (
-                                <div key={`${cartItem.id}-${index}`} className="w-full border border-neutral-300 rounded bg-white p-2">
-                                    <p className="font-inter text-sm font-semibold">{cartItem.title}</p>
+                                <div key={`${cartItem.id}-${index}`} className="w-full border border-neutral-300 rounded bg-white p-2 text-neutral-900">
+                                    <p className="font-inter text-sm font-semibold text-neutral-900">{cartItem.title}</p>
                                     <img src={cartItem.thumbnail} alt={cartItem.title} className="w-full h-16 object-cover rounded" />
                                     <div className="mt-2 flex items-center justify-between">
-                                        <p className="font-inter text-xs">Qty: {cartItem.amount}</p>
+                                        <p className="font-inter text-xs text-neutral-800">Qty: {cartItem.amount}</p>
                                         <div className="flex items-center gap-1">
                                             <button
                                                 type="button"
-                                                className="px-2 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100"
+                                                className="px-2 py-1 text-xs border border-neutral-300 rounded bg-white text-neutral-900 hover:bg-neutral-100"
                                                 onClick={() => handleCartItemAmountChange(index, -1)}
                                             >
                                                 -
                                             </button>
                                             <button
                                                 type="button"
-                                                className="px-2 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100"
+                                                className="px-2 py-1 text-xs border border-neutral-300 rounded bg-white text-neutral-900 hover:bg-neutral-100"
                                                 onClick={() => handleCartItemAmountChange(index, 1)}
                                             >
                                                 +
                                             </button>
                                         </div>
                                     </div>
-                                    <p className="font-inter text-xs">Unit price: {formatPrice(cartItem.price)}</p>
-                                    <p className="font-inter text-xs font-semibold">Item total: {formatPrice(cartItem.price * cartItem.amount)}</p>
+                                    <p className="font-inter text-xs text-neutral-800">Unit price: {formatPrice(cartItem.price)}</p>
+                                    <p className="font-inter text-xs font-semibold text-neutral-900">Item total: {formatPrice(cartItem.price * cartItem.amount)}</p>
                                 </div>
                             ))
                         )}
@@ -224,47 +225,48 @@ export default function BFCustomerPage(){
                 </div>
             </div>
             <div onClick={() => setIsOpen(!isOpen)}
-                className={`flex lg:hidden fixed right-0 top-20 z-[100] bg-neutral-200 rounded-md ${isOpen ? "translate-x-0" : "translate-x-4/5"} transition-transform duration-300 max-h-[calc(100vh-6rem)] overflow-hidden`}>
+                className={`flex lg:hidden fixed right-0 top-20 z-[100] bg-neutral-100 text-neutral-900 border border-neutral-300 shadow-lg rounded-md ${isOpen ? "translate-x-0" : "translate-x-4/5"} transition-transform duration-300 max-h-[calc(100vh-6rem)] overflow-hidden`}
+                style={{ colorScheme: 'light' }}>
                 <div className=" w-1/5 p-4 flex items-center justify-center p-8">
                     <ShoppingBasketIcon sx={{ 
                         color: "orange",
                         fontSize: 32
                      }}/>
                 </div>
-                <div className=" w-4/5 p-4 flex flex-col items-center p-8 gap-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden" style={{ direction: 'rtl' }}>
+                <div className=" w-4/5 p-4 flex flex-col items-center p-8 gap-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-neutral-900" style={{ direction: 'rtl' }}>
                     <div className="w-full" style={{ direction: 'ltr' }}>
                         <div className="mb-2 border border-neutral-300 rounded bg-white p-2">
                             <p className="font-inter text-xs text-gray-600">Cart total</p>
-                            <p className="font-inter text-base font-semibold">{formatPrice(cartTotal)}</p>
+                            <p className="font-inter text-base font-semibold text-neutral-950">{formatPrice(cartTotal)}</p>
                         </div>
                         {cartItems.length === 0 ? (
                             <p className="font-inter text-sm text-gray-500">Cart is empty</p>
                         ) : (
                             cartItems.map((cartItem, index) => (
-                                <div key={`${cartItem.id}-${index}`} className="w-full border border-neutral-300 rounded bg-white p-2">
-                                    <p className="font-inter text-sm font-semibold">{cartItem.title}</p>
+                                <div key={`${cartItem.id}-${index}`} className="w-full border border-neutral-300 rounded bg-white p-2 text-neutral-900">
+                                    <p className="font-inter text-sm font-semibold text-neutral-900">{cartItem.title}</p>
                                     <img src={cartItem.thumbnail} alt={cartItem.title} className="w-full h-16 object-cover rounded" />
                                     <div className="mt-2 flex items-center justify-between">
-                                        <p className="font-inter text-xs">Qty: {cartItem.amount}</p>
+                                        <p className="font-inter text-xs text-neutral-800">Qty: {cartItem.amount}</p>
                                         <div className="flex items-center gap-1">
                                             <button
                                                 type="button"
-                                                className="px-2 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100"
+                                                className="px-2 py-1 text-xs border border-neutral-300 rounded bg-white text-neutral-900 hover:bg-neutral-100"
                                                 onClick={() => handleCartItemAmountChange(index, -1)}
                                             >
                                                 -
                                             </button>
                                             <button
                                                 type="button"
-                                                className="px-2 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100"
+                                                className="px-2 py-1 text-xs border border-neutral-300 rounded bg-white text-neutral-900 hover:bg-neutral-100"
                                                 onClick={() => handleCartItemAmountChange(index, 1)}
                                             >
                                                 +
                                             </button>
                                         </div>
                                     </div>
-                                    <p className="font-inter text-xs">Unit price: {formatPrice(cartItem.price)}</p>
-                                    <p className="font-inter text-xs font-semibold">Item total: {formatPrice(cartItem.price * cartItem.amount)}</p>
+                                    <p className="font-inter text-xs text-neutral-800">Unit price: {formatPrice(cartItem.price)}</p>
+                                    <p className="font-inter text-xs font-semibold text-neutral-900">Item total: {formatPrice(cartItem.price * cartItem.amount)}</p>
                                 </div>
                             ))
                         )}
@@ -298,14 +300,15 @@ export default function BFCustomerPage(){
                     >
                        
                         <p className="font-inter text-sm text-neutral-900">{product.price}</p>
-                        <p className="font-inter text-sm text-neutral-800">Details</p>
+                        <p className="font-inter text-sm text-neutral-800">Select quantity</p>
                         <div>
                             <form 
                                 onSubmit={(e) => handleSubmit(e, product)}
                                 id="expense-form">
                                 <input 
-                                    className="w-1/2 shadow-lg"
+                                    className="w-1/2 shadow-lg bg-white text-neutral-900 border border-neutral-300 rounded px-2 py-1"
                                     type="number"
+                                    style={{ colorScheme: 'light' }}
                                                                         min={0}
                                                                         value={(quantities[product.id] ?? 0) === 0 ? '' : quantities[product.id]}
                                                                         onChange={e => {
