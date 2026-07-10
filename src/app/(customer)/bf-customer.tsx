@@ -34,6 +34,7 @@ export default function BFCustomerPage(){
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [isLoading, setIsLoading] = useState(true)
+    const [activeMobileProductId, setActiveMobileProductId] = useState<string | null>(null)
 
     const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.amount, 0);
 
@@ -277,14 +278,24 @@ export default function BFCustomerPage(){
             <div className="w-full max-w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                 {products.map((product, index) => (
                 <div className=" group" key={index}>
-                    <div className= "relative  flex flex-col justify-center items-center h-48 md:h-48 lg:h-64 transition-transform duration-300 group-hover:-translate-x-12">
-                        <div className="absolute flex flex-col items-center justify-center h-2/3 w-2/3 z-20 text-sm md:text-lg lg:text-lg">
+                    <div className={`relative  flex flex-col justify-center items-center h-48 md:h-48 lg:h-64 transition-transform duration-300 lg:group-hover:-translate-x-12 ${activeMobileProductId === product.id ? "-translate-x-12" : ""}`}>
+                        <div
+                            className="absolute flex flex-col items-center justify-center h-2/3 w-2/3 z-20 text-sm md:text-lg lg:text-lg cursor-pointer lg:cursor-default"
+                            onClick={() => {
+                                if (window.matchMedia('(max-width: 1023px)').matches) {
+                                    setActiveMobileProductId((prev) => (prev === product.id ? null : product.id));
+                                }
+                            }}
+                        >
                             <img src ={product.thumbnail ?? "/bg3.jpg"} alt="Item Image" />
                             <p className="font-inter text-neutral-900">{product.title ?? "Item Name"}</p>
                             <p className="block lg:hidden font-inter text-neutral-900"> {product.price}</p>
                             
                         </div>
-                    <div className=" flex flex-col hidden lg:block absolute z-10 transition-all duration-300 opacity-0 group-hover:translate-x-38 group-hover:opacity-100  w-1/3 space-y-2">
+                    <div
+                        className={`flex flex-col absolute z-10 transition-all duration-300 w-2/3 lg:w-1/3 space-y-2 ${activeMobileProductId === product.id ? "translate-x-38 opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"} lg:translate-x-0 lg:opacity-0 lg:pointer-events-none lg:group-hover:translate-x-38 lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                        
                         <p className="font-inter text-sm text-neutral-900">{product.price}</p>
                         <p className="font-inter text-sm text-neutral-800">Details</p>
