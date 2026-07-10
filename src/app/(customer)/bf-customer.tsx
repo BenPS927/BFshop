@@ -224,10 +224,13 @@ export default function BFCustomerPage(){
                 </div>
                 </div>
             </div>
-            <div onClick={() => setIsOpen(!isOpen)}
+            <div
                 className={`flex lg:hidden fixed right-0 top-20 z-[100] bg-neutral-100 text-neutral-900 border border-neutral-300 shadow-lg rounded-md ${isOpen ? "translate-x-0" : "translate-x-4/5"} transition-transform duration-300 max-h-[calc(100vh-6rem)] overflow-hidden`}
                 style={{ colorScheme: 'light' }}>
-                <div className=" w-1/5 p-4 flex items-center justify-center p-8">
+                <div
+                    className=" w-1/5 p-4 flex items-center justify-center p-8 cursor-pointer"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
                     <ShoppingBasketIcon sx={{ 
                         color: "orange",
                         fontSize: 32
@@ -306,7 +309,7 @@ export default function BFCustomerPage(){
                                 onSubmit={(e) => handleSubmit(e, product)}
                                 id="expense-form">
                                 <input 
-                                    className="w-1/2 shadow-lg bg-white text-neutral-900 border border-neutral-300 rounded px-2 py-1"
+                                    className="w-12 lg:w-14 shadow-lg bg-white text-neutral-900 border border-neutral-300 rounded px-2 py-1"
                                     type="number"
                                     style={{ colorScheme: 'light' }}
                                                                         min={0}
