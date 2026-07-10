@@ -14,14 +14,6 @@ type Product = {
    
 }
 
-type Selection = {
-  id: string
-  title: string
-  price: number
-  amount: number
-  thumbnail?: string
-}
-
 type CartItem = {
   id: string;
   title: string;
@@ -30,25 +22,126 @@ type CartItem = {
   amount: number;
 };
 
+const CART_STORAGE_KEY = 'selection';
+
 
 
 export default function BFCustomerPage(){
 
     const [products, setProducts] = useState<Product[]>([]);
     const [isOpen, setIsOpen] = useState(false);
-    const [selection, setSelection] = useState(0);
+    const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(false);
+    const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [isLoading, setIsLoading] = useState(true)
 
+    const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.amount, 0);
 
-    //handles the form submission from selecting products
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        localStorage.setItem("selection", JSON.stringify(cartItems))
-        const saved = localStorage.getItem("selection");
-        setCartItems(saved ? JSON.parse(saved) : []);
-        console.log(cartItems)
+    function formatPrice(value: number) {
+        return `$${value.toFixed(2)}`;
     }
+
+    function updateCart(mutator: (prevCartItems: CartItem[]) => CartItem[]) {
+        setCartItems((prevCartItems) => {
+            const updatedCart = mutator(prevCartItems);
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updatedCart));
+            return updatedCart;
+        });
+    }
+
+    function handleCartItemAmountChange(itemIndex: number, change: number) {
+        updateCart((prevCartItems) => {
+            const nextCart = prevCartItems.flatMap((item, index) => {
+                if (index !== itemIndex) {
+                    return [item];
+                }
+
+                const nextAmount = item.amount + change;
+                if (nextAmount <= 0) {
+                    return [];
+                }
+
+                return [{ ...item, amount: nextAmount }];
+            });
+
+            return nextCart;
+        });
+    }
+
+
+    function handleSubmit(e: React.FormEvent, product: Product) {
+  e.preventDefault(); // stop default form submission (no page reload)
+
+    const amount = quantities[product.id] ?? 0;
+    if (amount <= 0) {
+        console.warn('[cart debug] add blocked because amount is 0', {
+            productId: product.id,
+            amount,
+            quantitiesSnapshot: quantities,
+        });
+        return;
+    }
+
+  const newItem = {
+    id: product.id, // take product id
+    title: product.title ?? product.name ?? "Untitled", // choose best available name
+    price: product.price ?? 0, // unit price (fallback 0)
+    thumbnail: product.thumbnail ?? "/bg3.jpg", // product image or placeholder
+        amount, // quantity for this product id
+  };
+
+    updateCart((prevCartItems) => {
+        const existingItemIndex = prevCartItems.findIndex((item) => item.id === newItem.id);
+
+        let updatedCart: CartItem[];
+        if (existingItemIndex >= 0) {
+            updatedCart = prevCartItems.map((item, index) => {
+                if (index !== existingItemIndex) {
+                    return item;
+                }
+
+                return {
+                    ...item,
+                    amount: item.amount + newItem.amount,
+                };
+            });
+        } else {
+            updatedCart = [...prevCartItems, newItem];
+        }
+
+        console.group('[cart debug] cumulative cart + localStorage');
+        console.log('previous React state (cartItems):', prevCartItems);
+        console.log('incoming newItem:', newItem);
+        console.log('merged existing item:', existingItemIndex >= 0);
+        console.log('next React state (updatedCart):', updatedCart);
+        console.log('cumulative count:', updatedCart.length);
+        console.table(updatedCart);
+        console.groupEnd();
+
+        return updatedCart;
+    }); // Make a new array that contains all the old cart items, plus this new item.
+
+        setQuantities((prev) => ({ ...prev, [product.id]: 0 }));
+
+  console.log(newItem); // debug: log the item being added
+}
+
+    useEffect(() => {
+        const savedCartRaw = localStorage.getItem(CART_STORAGE_KEY);
+        if (!savedCartRaw) {
+            return;
+        }
+
+        try {
+            const savedCart = JSON.parse(savedCartRaw) as CartItem[];
+            if (Array.isArray(savedCart)) {
+                setCartItems(savedCart);
+                console.log('[cart debug] hydrated from localStorage:', savedCart);
+            }
+        } catch {
+            console.warn('[cart debug] failed to parse cart from localStorage');
+        }
+    }, []);
 
     
 
@@ -69,7 +162,7 @@ export default function BFCustomerPage(){
     return (
         <div className="relative min-h-screen bg-neutral-100 flex flex-col items-center px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-12">
             <Link href="/" className="absolute top-4 left-4 font-inter text-sm text-gray-500 hover:text-neutral-950 transition">&larr; Back</Link>
-            <div className=" min-w-screen flex flex-col justify-center items-center p-8 lg:p-16 space-y-16">
+            <div className="w-full max-w-full flex flex-col justify-center items-center p-8 lg:p-16 space-y-16">
                 <h1 className="font-bebas text-4xl tracking-wide leading-tight text-center p-2 lg:p-8 border-b border-orange-500 md:text-5xl lg:text-6xl">BF <span className="text-[orange]">Customer</span></h1>
                     <h2 className="font-inter text-base leading-relaxed text-gray-600 text-left md:text-center lg:text-center p-2 lg:p-8 md:text-lg">This is BF Customer, the customer end of BFShop. Here, you will be able to place 
                         orders which will appear in BF Merchant, which you can get to by going back and to the Merchant interface (when it's built).
@@ -77,42 +170,111 @@ export default function BFCustomerPage(){
                 
             </div>
             <div className="hidden md:hidden lg:block">
-            <div className="flex fixed right-0 top-20 z-20 bg-neutral-200 translate-x-4/5 hover:translate-x-0 transition-transform duration-300">
+            <div
+                onMouseEnter={() => setIsDesktopCartOpen(true)}
+                onMouseLeave={() => setIsDesktopCartOpen(false)}
+                className={`flex fixed right-0 top-20 z-[100] bg-neutral-200 transition-transform duration-300 max-h-[calc(100vh-6rem)] overflow-hidden ${isDesktopCartOpen ? "translate-x-0" : "translate-x-4/5"}`}
+            >
                 <div className=" w-1/5 p-4 flex items-center justify-center p-8">
                     <ShoppingBasketIcon sx={{ 
                         color: "orange",
                         fontSize: 32
                      }}/>
                 </div>
-                <div className=" w-4/5 p-4 flex flex-col items-center p-8">
-                    <p></p>
+                <div className=" w-4/5 p-4 flex flex-col items-center p-8 gap-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden" style={{ direction: 'rtl' }}>
+                    <div className="w-full" style={{ direction: 'ltr' }}>
+                        <div className="mb-2 border border-neutral-300 rounded bg-white p-2">
+                            <p className="font-inter text-xs text-gray-600">Cart total</p>
+                            <p className="font-inter text-base font-semibold">{formatPrice(cartTotal)}</p>
+                        </div>
+                        {cartItems.length === 0 ? (
+                            <p className="font-inter text-sm text-gray-500">Cart is empty</p>
+                        ) : (
+                            cartItems.map((cartItem, index) => (
+                                <div key={`${cartItem.id}-${index}`} className="w-full border border-neutral-300 rounded bg-white p-2">
+                                    <p className="font-inter text-sm font-semibold">{cartItem.title}</p>
+                                    <img src={cartItem.thumbnail} alt={cartItem.title} className="w-full h-16 object-cover rounded" />
+                                    <div className="mt-2 flex items-center justify-between">
+                                        <p className="font-inter text-xs">Qty: {cartItem.amount}</p>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                className="px-2 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100"
+                                                onClick={() => handleCartItemAmountChange(index, -1)}
+                                            >
+                                                -
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="px-2 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100"
+                                                onClick={() => handleCartItemAmountChange(index, 1)}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="font-inter text-xs">Unit price: {formatPrice(cartItem.price)}</p>
+                                    <p className="font-inter text-xs font-semibold">Item total: {formatPrice(cartItem.price * cartItem.amount)}</p>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
                 </div>
             </div>
             <div onClick={() => setIsOpen(!isOpen)}
-                className={`flex lg:hidden fixed right-0 top-20 z-100 bg-neutral-200 rounded-md ${isOpen ? "translate-x-0" : "translate-x-4/5"} transition-transform duration-300`}>
+                className={`flex lg:hidden fixed right-0 top-20 z-[100] bg-neutral-200 rounded-md ${isOpen ? "translate-x-0" : "translate-x-4/5"} transition-transform duration-300 max-h-[calc(100vh-6rem)] overflow-hidden`}>
                 <div className=" w-1/5 p-4 flex items-center justify-center p-8">
                     <ShoppingBasketIcon sx={{ 
                         color: "orange",
                         fontSize: 32
                      }}/>
                 </div>
-                <div className=" w-4/5 p-4 flex flex-col items-center p-8">
-                    {cartItems.map((cartItem, index) => (
-                        <div key={index} className="border">
-                            <div>{cartItem.title}</div>
-                            <img src={cartItem.thumbnail} />
-                            <div>{cartItem.price}</div>
+                <div className=" w-4/5 p-4 flex flex-col items-center p-8 gap-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden" style={{ direction: 'rtl' }}>
+                    <div className="w-full" style={{ direction: 'ltr' }}>
+                        <div className="mb-2 border border-neutral-300 rounded bg-white p-2">
+                            <p className="font-inter text-xs text-gray-600">Cart total</p>
+                            <p className="font-inter text-base font-semibold">{formatPrice(cartTotal)}</p>
                         </div>
-                        
-                        ))}
+                        {cartItems.length === 0 ? (
+                            <p className="font-inter text-sm text-gray-500">Cart is empty</p>
+                        ) : (
+                            cartItems.map((cartItem, index) => (
+                                <div key={`${cartItem.id}-${index}`} className="w-full border border-neutral-300 rounded bg-white p-2">
+                                    <p className="font-inter text-sm font-semibold">{cartItem.title}</p>
+                                    <img src={cartItem.thumbnail} alt={cartItem.title} className="w-full h-16 object-cover rounded" />
+                                    <div className="mt-2 flex items-center justify-between">
+                                        <p className="font-inter text-xs">Qty: {cartItem.amount}</p>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                className="px-2 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100"
+                                                onClick={() => handleCartItemAmountChange(index, -1)}
+                                            >
+                                                -
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="px-2 py-1 text-xs border border-neutral-300 rounded hover:bg-neutral-100"
+                                                onClick={() => handleCartItemAmountChange(index, 1)}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="font-inter text-xs">Unit price: {formatPrice(cartItem.price)}</p>
+                                    <p className="font-inter text-xs font-semibold">Item total: {formatPrice(cartItem.price * cartItem.amount)}</p>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
             <p className="font-inter text-2xl font-semibold text-neutral-950">Have a browse!</p>
             {isLoading ? (
                 <p className="font-inter text-lg text-gray-500">Products loading...</p>
             ) : (
-            <div className="min-w-screen grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            <div className="w-full max-w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                 {products.map((product, index) => (
                 <div className=" group" key={index}>
                     <div className= "relative  flex flex-col justify-center items-center h-48 md:h-48 lg:h-64 transition-transform duration-300 group-hover:-translate-x-12">
@@ -128,13 +290,17 @@ export default function BFCustomerPage(){
                         <p className="font-inter text-sm">Details</p>
                         <div>
                             <form 
-                                onSubmit={handleSubmit}
+                                onSubmit={(e) => handleSubmit(e, product)}
                                 id="expense-form">
                                 <input 
                                     className="w-1/2 shadow-lg"
                                     type="number"
-                                    value={selection}
-                                    onChange={e => setSelection(Number(e.target.value) || 0)}
+                                                                        min={0}
+                                                                        value={(quantities[product.id] ?? 0) === 0 ? '' : quantities[product.id]}
+                                                                        onChange={e => {
+                                                                            const next = e.target.value === '' ? 0 : Math.max(0, Number(e.target.value) || 0)
+                                                                            setQuantities((prev) => ({ ...prev, [product.id]: next }))
+                                                                        }}
         
                                 />
                           

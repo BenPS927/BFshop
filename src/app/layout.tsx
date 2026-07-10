@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Geist, Geist_Mono, Inter } from "next/font/google";
-import "./globals.css";
+import "@/app/globals.css";
 import JsonLd from "@/app/components/shared/jsonld";
 
 const geistSans = Geist({
@@ -31,6 +31,13 @@ export const metadata: Metadata = {
   },
   description: "An end to end business system featuring a customer and merchant end with an active backend, enhanced by AI. Built with Next JS.",
 };
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
