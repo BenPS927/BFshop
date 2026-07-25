@@ -309,7 +309,7 @@ export default function BFCustomerPage(){
                                 onSubmit={(e) => handleSubmit(e, product)}
                                 id="expense-form">
                                 <input 
-                                    className="w-12 lg:w-14 shadow-lg bg-white text-neutral-900 border border-neutral-300 rounded px-2 py-1"
+                                    className="block lg:inline-block w-12 lg:w-14 shadow-lg bg-white text-neutral-900 border border-neutral-300 rounded px-2 py-1"
                                     type="number"
                                     style={{ colorScheme: 'light' }}
                                                                         min={0}
@@ -326,7 +326,7 @@ export default function BFCustomerPage(){
                         
                         <button
                             type="submit"
-                            className=" cursor-pointer transition-transform hover:scale-120  p-0 m-0 appearance-none"
+                            className="block lg:inline-block mt-2 lg:mt-0 cursor-pointer transition-transform hover:scale-120 p-0 m-0 appearance-none"
                             style={{ border: "none", background: "none" }}
                             >
                         <AddIcon  sx={{ 
