@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import BFCustomerPage from "../bf-customer";
+import BFCustomerPage from "../bf-customer-new";
 import JsonLd from "../../components/shared/jsonld";
 
 export const metadata: Metadata = {

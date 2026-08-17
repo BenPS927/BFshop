@@ -1,4 +1,4 @@
-import BFCustomerPage from "./bf-customer";
+import BFCustomerPage from "./bf-customer-new";
 import JsonLd from "../components/shared/jsonld"
 import { Metadata } from 'next';
 

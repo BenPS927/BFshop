@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 
-export async function GetProduct_DB_op(tx: Prisma.TransactionClient, productIds: number[]) {
+export async function GetProduct_DB_op(tx: Prisma.TransactionClient | PrismaClient, productIds: number[]) {
     
 
     console.log("Getproduct_DB_ops: Looking up products");

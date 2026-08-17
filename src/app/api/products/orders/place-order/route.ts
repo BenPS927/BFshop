@@ -32,6 +32,7 @@ export async function POST(request: Request) {
         if (
             error instanceof Error &&
             (error.message === "Customer not found" ||
+             error.message === "Product not found" ||
              error.message === "One or more products not found")
         ) {
             return Response.json(

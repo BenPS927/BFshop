@@ -4,20 +4,20 @@ import { WriteOrder_DB_op } from "@/app/repositories/orders/WriteOrder_DB_op";
 import { WriteOrderItems_DB_op } from "@/app/repositories/orders/WriteOrderItems_DB_op";
 import { CreateOrderRequest, CreatedOrder, BackendOrderItem, CustomerType, WrittenOrderItems } from "@/app/types/orders";
 import { prisma } from "@/server/db";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 export async function createOrderService(order: CreateOrderRequest) {
 
     console.log("SERVICE: Starting createOrderService");
 
-    return await prisma.$transaction(async (tx) => {
-        console.log("SERVICE: Transaction started");
+    return await (async (tx: Prisma.TransactionClient | PrismaClient) => {
+        console.log("SERVICE: Order write started");
 
 
             console.log("SERVICE: Processing Customer")
             const customerId = order.customerId 
 
-            async function processCustomer( tx: Prisma.TransactionClient, customerId: number ): Promise<Awaited<ReturnType<typeof GetCustomer_DB_op>>>  {
+            async function processCustomer( tx: Prisma.TransactionClient | PrismaClient, customerId: number ): Promise<Awaited<ReturnType<typeof GetCustomer_DB_op>>>  {
             
                 const customer = await GetCustomer_DB_op(tx, customerId);
                 console.log("SERVICE: received customer");
@@ -32,7 +32,7 @@ export async function createOrderService(order: CreateOrderRequest) {
                 return item.productId;    }
             )
 
-            async function processProduct( tx: Prisma.TransactionClient, productIds: number[] ): Promise<Awaited<ReturnType<typeof GetProduct_DB_op>>>  {
+            async function processProduct( tx: Prisma.TransactionClient | PrismaClient, productIds: number[] ): Promise<Awaited<ReturnType<typeof GetProduct_DB_op>>>  {
             
                 const products = await GetProduct_DB_op(tx, productIds);
                 console.log("SERVICE: received product");
@@ -90,7 +90,7 @@ export async function createOrderService(order: CreateOrderRequest) {
 
 
 
-            async function createOrder( tx: Prisma.TransactionClient, customer: CustomerType, orderItems: BackendOrderItem[]) {
+            async function createOrder( tx: Prisma.TransactionClient | PrismaClient, customer: CustomerType, orderItems: BackendOrderItem[]) {
                
                 const total = orderItems.reduce((total, item) => {
                     return total + item.line_total;
@@ -111,7 +111,7 @@ export async function createOrderService(order: CreateOrderRequest) {
 
 
             
-            async function writeOrderItems (tx: Prisma.TransactionClient, orderItems: BackendOrderItem[], createdOrder: CreatedOrder): Promise<WrittenOrderItems[]> {
+            async function writeOrderItems (tx: Prisma.TransactionClient | PrismaClient, orderItems: BackendOrderItem[], createdOrder: CreatedOrder): Promise<WrittenOrderItems[]> {
 
                 const writtenItems = await Promise.all(
                     orderItems.map(async (item) => {
@@ -126,7 +126,7 @@ export async function createOrderService(order: CreateOrderRequest) {
             console.log("SERVICE: Order Items written to database")
 
             return createdOrder
-        });
+        })(prisma);
         
 
 }

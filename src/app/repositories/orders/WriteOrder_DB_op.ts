@@ -1,7 +1,8 @@
 import type { Prisma } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 import { WriteNewOrder } from "@/app/types/orders";
 
-export async function WriteOrder_DB_op(tx: Prisma.TransactionClient, newOrder: WriteNewOrder) {
+export async function WriteOrder_DB_op(tx: Prisma.TransactionClient | PrismaClient, newOrder: WriteNewOrder) {
 
     console.log("WriteOrder_DB_ops: Writing new order");
 
