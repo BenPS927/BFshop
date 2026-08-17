@@ -34,7 +34,8 @@ export default function BFCustomerPage(){
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [isLoading, setIsLoading] = useState(true)
-    const [activeMobileProductId, setActiveMobileProductId] = useState<string | null>(null)
+    const [activeMobileProductId, setActiveMobileProductId] = useState<string | null>(null) 
+    const [customerId] = useState(1);
 
     const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.amount, 0);
 
@@ -144,6 +145,32 @@ export default function BFCustomerPage(){
         }
     }, []);
 
+    async function placeOrder(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault(); 
+
+       
+
+        const orderItems  = cartItems.map(item => ({
+            productId:item.id,
+            quantity: item.amount,
+        }))
+
+        const newOrder = {
+            customerId,
+            items: orderItems,
+        };
+
+        console.log("new order is =", newOrder, "items of that order are =", orderItems)
+
+        const response = await fetch("/api/products/orders/place-order", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(newOrder),
+        })
+    
+    }
+        
+
     
 
     useEffect(() => { //useffect's job is to run side effects that happen outside of normal rendering processes
@@ -153,7 +180,14 @@ export default function BFCustomerPage(){
                                                             // fetch makes the request
             const data = await response.json()      //this creates a variable that will hold the parsed result. await makes it pause until the conversion finishes
                                                     //.json takes the response body and converts it into JS data
-            setProducts(data.products)          //here data variable is stored in setProducts, so therefor updates the products array
+                if (!response.ok || !Array.isArray(data.products)) {
+                    console.error("Failed to load products", data)
+                    setProducts([])
+                    setIsLoading(false)
+                    return
+                }
+
+                setProducts(data.products)          //here data variable is stored in setProducts, so therefor updates the products array
             setIsLoading(false)
             }
  
@@ -165,7 +199,7 @@ export default function BFCustomerPage(){
             <Link href="/" className="absolute top-4 left-4 font-inter text-sm text-gray-500 hover:text-neutral-950 transition">&larr; Back</Link>
             <div className="w-full max-w-full flex flex-col justify-center items-center p-8 lg:p-16 space-y-16">
                 <h1 className="font-bebas text-4xl tracking-wide leading-tight text-center p-2 lg:p-8 border-b border-orange-500 md:text-5xl lg:text-6xl">BF <span className="text-[orange]">Customer</span></h1>
-                    <h2 className="font-inter text-base leading-relaxed text-gray-600 text-left md:text-center lg:text-center p-2 lg:p-8 md:text-lg">This is BF Customer, the customer end of BFShop. Here, you will be able to place 
+                    <h2 className=" text-base leading-relaxed text-gray-600 text-left md:text-center lg:text-center p-2 lg:p-8 md:text-lg">This is BF Customer, the customer end of BFShop. Here, you will be able to place 
                         orders which will appear in BF Merchant, which you can get to by going back and to the Merchant interface (when it's built).
                     </h2>
                 
@@ -184,7 +218,7 @@ export default function BFCustomerPage(){
                      }}/>
                 </div>
                 <div className=" w-4/5 p-4 flex flex-col items-center p-8 gap-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-neutral-900" style={{ direction: 'rtl' }}>
-                    <div className="w-full" style={{ direction: 'ltr' }}>
+                    <div className="w-full space-y-2 flex flex-col justify-center" style={{ direction: 'ltr' }}>
                         <div className="mb-2 border border-neutral-300 rounded bg-white p-2">
                             <p className="font-inter text-xs text-gray-600">Cart total</p>
                             <p className="font-inter text-base font-semibold text-neutral-950">{formatPrice(cartTotal)}</p>
@@ -217,9 +251,26 @@ export default function BFCustomerPage(){
                                     </div>
                                     <p className="font-inter text-xs text-neutral-800">Unit price: {formatPrice(cartItem.price)}</p>
                                     <p className="font-inter text-xs font-semibold text-neutral-900">Item total: {formatPrice(cartItem.price * cartItem.amount)}</p>
+                                   
                                 </div>
+                                
                             ))
                         )}
+                        <form 
+                                onSubmit={placeOrder}
+                                id="place order button">
+                          
+                                   
+                       
+                        
+                        <button
+                            type="submit"
+                            className="mt-2 w-full p-2 font-inter bg-orange-300 rounded-3xl hover:cursor-pointer transition-transform duration-300 ease-in-out active:scale-80 active:bg-orange-400"
+                            >
+                        Place order
+                        </button>
+                        </form>
+                        
                     </div>
                 </div>
                 </div>
@@ -273,10 +324,25 @@ export default function BFCustomerPage(){
                                 </div>
                             ))
                         )}
+                       
+                        <form 
+                                onSubmit={placeOrder}
+                                id="place order button">
+                          
+                                   
+                       
+                        
+                        <button
+                            type="submit"
+                            className="mt-2 w-full p-2 font-inter bg-orange-300 rounded-3xl hover:cursor-pointer transition-transform duration-300 ease-in-out active:scale-80 active:bg-orange-400">
+                            
+                        Place order
+                        </button>
+                        </form>
                     </div>
                 </div>
             </div>
-            <p className="font-inter text-2xl font-semibold text-neutral-950">Have a browse!</p>
+            <p className=" text-2xl font-semibold text-neutral-950">Have a browse!</p>
             {isLoading ? (
                 <p className="font-inter text-lg text-gray-500">Products loading...</p>
             ) : (
@@ -293,7 +359,7 @@ export default function BFCustomerPage(){
                             }}
                         >
                             <img src ={product.thumbnail ?? "/bg3.jpg"} alt="Item Image" />
-                            <p className="font-inter text-neutral-900">{product.title ?? "Item Name"}</p>
+                            <p className=" text-neutral-900">{product.title ?? "Item Name"}</p>
                             <p className="block lg:hidden font-inter text-neutral-900"> {product.price}</p>
                             
                         </div>
@@ -302,7 +368,7 @@ export default function BFCustomerPage(){
                         onClick={(e) => e.stopPropagation()}
                     >
                        
-                        <p className="font-inter text-sm text-neutral-900">{product.price}</p>
+                        <p className=" text-sm text-neutral-900">{product.price}</p>
                         <p className="font-inter text-sm text-neutral-800">Select quantity</p>
                         <div>
                             <form 

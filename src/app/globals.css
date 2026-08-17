@@ -10,8 +10,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-inter: var(--font-inter);
-  --font-bebas: var(--font-bebas);
+  --font-inter: var(--font-inter-ui);
+  --font-bebas: var(--font-bebas-ui);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,7 +24,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 html {

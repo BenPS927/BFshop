@@ -12,68 +12,9 @@ datasource db {
   provider = "postgresql"
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+model Customer {
+  id Int @id
+}
 
 model Product {
   id                   Int      @id
@@ -100,4 +41,24 @@ model Product {
   qrCode               String?
   images               String[]
   thumbnail            String?
+}
+
+model Order {
+  id          Int      @id @default(autoincrement())
+  customer_id Int
+  status      String
+  total       Float
+  created_at  DateTime @default(now())
+}
+
+model OrderItem {
+  id           Int    @id @default(autoincrement())
+  order_id     Int
+  product_id   Int
+  product_name String
+  quantity     Int
+  unit_price   Float
+  line_total   Float
+
+  @@map("orderitem")
 }

@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 const inter = Inter({
-  variable: "--font-inter",
+  variable: "--font-inter-ui",
   subsets: ["latin"],
 });
 
 const bebas = Bebas_Neue({
-  variable: "--font-bebas",
+  variable: "--font-bebas-ui",
   subsets: ["latin"],
   weight: "400",
 });
