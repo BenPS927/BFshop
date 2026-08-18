@@ -1,6 +1,9 @@
-import { getSentOrders_DB_op } from  "@/app/repositories/merchantSlice/getSentOrders_DB_op"
+import { getOrders_DB_op } from "@/app/repositories/merchantSlice/getOrders_DB_op";
 
 export async function sentOrdersService() {
-    const sent = await getSentOrders_DB_op() 
+    const orders = await getOrders_DB_op() 
+    const sent = orders.filter((order: any) => {
+        return order.status === "sent";
+    });
     return sent 
 }
