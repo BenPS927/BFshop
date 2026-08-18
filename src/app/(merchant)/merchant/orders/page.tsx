@@ -5,6 +5,7 @@ import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import type { CreatedOrder } from "@/app/types/orders";
+import { useMerchantTheme } from "../useMerchantTheme";
 
 type ReceivedOrder = Omit<CreatedOrder, "created_at"> & {
   created_at: string;
@@ -56,9 +57,10 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
 }
 
 export default function MerchantOrdersPage() {
-  const [lightMode, setLightMode] = useState(false);
+  const { lightMode, toggleTheme } = useMerchantTheme();
   const [receivedOrders, setReceivedOrders] = useState<ReceivedOrder[]>([]);
   const [sentOrders, setSentOrders] = useState<ReceivedOrder[]>([]);
+  const [deliveredOrders, setDeliveredOrders] = useState<ReceivedOrder[]>([]);
 
   const receivedContent = receivedOrders.map((entry) => (
     <article
@@ -124,8 +126,32 @@ export default function MerchantOrdersPage() {
             : "border-sky-400/50 text-sky-300 hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100"
         }`}
       >
-        Mark as sent
+        Mark as delivered
       </button>
+    </article>
+  ));
+
+  const deliveredContent = deliveredOrders.map((entry) => (
+    <article
+      key={entry.id}
+      className={`grid gap-3 border p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:gap-4 md:p-6 ${
+        lightMode ? "border-zinc-300 bg-white text-zinc-900" : "border-white/15 bg-white/[0.06] text-white"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <h3 className={`font-inter text-lg font-medium leading-snug md:text-xl ${lightMode ? "text-zinc-900" : "text-white"}`}>
+          Order #{entry.id}
+        </h3>
+        <span className={`shrink-0 font-inter text-sm font-medium leading-none md:text-base ${lightMode ? "text-sky-700" : "text-sky-300"}`}>
+          ${entry.total.toFixed(2)}
+        </span>
+      </div>
+
+      <div className={`border-t pt-3 font-inter text-xs leading-normal md:pt-4 md:text-sm ${lightMode ? "border-zinc-200 text-zinc-600" : "border-white/15 text-zinc-400"}`}>
+        <p>Customer #{entry.customer_id}</p>
+        <p className="mt-2">Delivered {new Date(entry.created_at).toLocaleString()}</p>
+      </div>
+      
     </article>
   ));
 
@@ -143,7 +169,7 @@ export default function MerchantOrdersPage() {
     {
       id: "operations",
       title: "Delivered",
-      content: null,
+      content: deliveredContent,
     },
   ];
 
@@ -187,14 +213,33 @@ export default function MerchantOrdersPage() {
     }
   };
 
+   const loadDeliveredOrders = async () => {
+    try {
+      console.log("[delivered orders] requesting /api/merchant/deliveredOrders");
+      const response = await fetch("/api/merchant/deliveredOrders");
+
+      console.log("[delivered orders] API response", {
+        status: response.status,
+        ok: response.ok,
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to load delivered orders");
+      }
+
+      const orders: ReceivedOrder[] = await response.json();
+      console.log("[delivered orders] received API payload", { count: orders.length });
+      setDeliveredOrders(orders);
+    } catch (error) {
+      console.error("[delivered orders] error loading sent orders", error);
+    }
+  };
+
   useEffect(() => {
     void loadReceivedOrders();
     void loadSentOrders();
+    void loadDeliveredOrders();
   }, []);
-
-  function toggleTheme() {
-    setLightMode((currentMode) => !currentMode);
-  }
 
   async function markAsSent(orderId: number) {
     const response = await fetch("/api/merchant/markAsSent", {
@@ -206,6 +251,7 @@ export default function MerchantOrdersPage() {
     if (response.ok) {
       await loadReceivedOrders();
       await loadSentOrders();
+      await loadDeliveredOrders();
     }
   }
 

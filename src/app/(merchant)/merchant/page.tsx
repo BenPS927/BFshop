@@ -3,7 +3,7 @@
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import Link from "next/link";
-import { useState } from "react";
+import { useMerchantTheme } from "./useMerchantTheme";
 
 const boards = [
   {
@@ -93,14 +93,7 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
 }
 
 export default function MerchantPage() {
-  const [lightMode, setLightMode] = useState(false);
-
-  function toggleTheme() {
-    setLightMode((currentMode) => {
-      const nextMode = !currentMode;
-      return nextMode;
-    });
-  }
+  const { lightMode, toggleTheme } = useMerchantTheme();
 
   return (
     <main

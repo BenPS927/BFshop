@@ -7,7 +7,7 @@ export async function markAsDelivered_DB_op(orderId: number) {
             id: orderId, 
         },
         data: {
-            status: "sent",
+            status: "delivered",
         },
     });
     return markedAsDelivered
