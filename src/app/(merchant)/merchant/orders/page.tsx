@@ -3,7 +3,7 @@
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { CreatedOrder } from "@/app/types/orders";
 
 type ReceivedOrder = Omit<CreatedOrder, "created_at"> & {
@@ -17,6 +17,13 @@ type Board = {
 };
 
 function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) {
+  const mobileNavigation =
+    board.id === "orders"
+      ? ["→ Sent orders"]
+      : board.id === "inventory"
+        ? ["← Received", "→ Delivered"]
+        : ["← Sent"];
+
   return (
     <article
       className={`flex min-h-[calc(100dvh-11.5rem)] flex-col border p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-6 lg:h-full lg:min-h-0 ${
@@ -25,10 +32,20 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
           : "border-white/15 bg-white/[0.07] text-white"
       }`}
     >
-      <div className="border-b border-current/15 pb-4">
+      <div className="flex items-start justify-between gap-4 border-b border-current/15 pb-4">
         <h2 className="font-inter text-2xl font-semibold leading-snug md:text-3xl">
           {board.title}
         </h2>
+        <div className="flex max-w-[58%] shrink-0 flex-wrap justify-end gap-2">
+          {mobileNavigation.map((navigationLabel) => (
+            <span
+              key={navigationLabel}
+              className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-sky-500 md:hidden"
+            >
+              {navigationLabel}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="mt-4 flex-1 space-y-3 overflow-y-auto md:mt-6 md:space-y-4">
@@ -42,7 +59,6 @@ export default function MerchantOrdersPage() {
   const [lightMode, setLightMode] = useState(false);
   const [receivedOrders, setReceivedOrders] = useState<ReceivedOrder[]>([]);
   const [sentOrders, setSentOrders] = useState<ReceivedOrder[]>([]);
-  const boardRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   const receivedContent = receivedOrders.map((entry) => (
     <article
@@ -176,14 +192,6 @@ export default function MerchantOrdersPage() {
     void loadSentOrders();
   }, []);
 
-  function scrollToBoard(index: number) {
-    boardRefs.current[index]?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
-  }
-
   function toggleTheme() {
     setLightMode((currentMode) => !currentMode);
   }
@@ -223,8 +231,8 @@ export default function MerchantOrdersPage() {
       }`}
     >
       <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1600px] grid-rows-[auto_1fr] gap-6 md:min-h-[calc(100vh-4rem)] md:gap-8 lg:min-h-[calc(100vh-6rem)] lg:gap-12">
-        <header className="sticky top-0 z-20 flex items-start justify-center bg-transparent backdrop-blur-[1px]">
-          <div className="absolute left-0 top-2">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
+          <div className="pt-2">
             <Link
               href="/merchant"
               className={`font-inter text-xs font-semibold uppercase tracking-[0.14em] transition ${
@@ -235,25 +243,20 @@ export default function MerchantOrdersPage() {
             </Link>
           </div>
 
-          <div className="text-center">
-            <h1
-              className={`border-b p-2 text-center font-bebas text-4xl leading-tight tracking-[0.12em] md:text-5xl lg:p-8 lg:text-6xl ${
-                lightMode ? "border-sky-700" : "border-sky-400"
-              }`}
-            >
-              BF <span className={lightMode ? "text-sky-700" : "text-sky-400"}>Merchant</span>
-            </h1>
-            <p className={`mt-1 font-inter text-xs font-semibold uppercase tracking-[0.14em] ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>
-              Order Hub
-            </p>
-          </div>
+          <h1
+            className={`border-b p-2 text-center font-bebas text-4xl leading-tight tracking-[0.12em] md:text-5xl lg:p-8 lg:text-6xl ${
+              lightMode ? "border-sky-700" : "border-sky-400"
+            }`}
+          >
+            Order Hub
+          </h1>
 
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
             title={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            className={`absolute right-0 top-0 grid size-11 shrink-0 place-items-center border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
+            className={`justify-self-end grid size-11 shrink-0 place-items-center border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
               lightMode
                 ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700"
                 : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"
@@ -264,50 +267,11 @@ export default function MerchantOrdersPage() {
         </header>
 
         <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:-mr-6 md:gap-6 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
-          {boards.map((board, index) => {
-            const prevBoard = index > 0 ? boards[index - 1] : null;
-            const nextBoard = index < boards.length - 1 ? boards[index + 1] : null;
-
-            return (
-              <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
-                <div className="mb-2 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-400">
-                  {prevBoard ? (
-                    <button
-                      type="button"
-                      onClick={() => scrollToBoard(index - 1)}
-                      className="inline-flex items-center gap-1 rounded-full border border-sky-400/40 bg-sky-400/10 px-2 py-1 transition hover:border-sky-300 hover:text-sky-300"
-                    >
-                      <span aria-hidden="true">←</span>
-                      <span>{prevBoard.title === "Sent" ? "Received" : prevBoard.title}</span>
-                    </button>
-                  ) : (
-                    <span className="w-[76px]" aria-hidden="true" />
-                  )}
-
-                  {nextBoard ? (
-                    <button
-                      type="button"
-                      onClick={() => scrollToBoard(index + 1)}
-                      className="inline-flex items-center gap-1 rounded-full border border-sky-400/40 bg-sky-400/10 px-2 py-1 transition hover:border-sky-300 hover:text-sky-300"
-                    >
-                      <span>{nextBoard.title === "Received" ? "Sent orders" : nextBoard.title}</span>
-                      <span aria-hidden="true">→</span>
-                    </button>
-                  ) : (
-                    <span className="w-[76px]" aria-hidden="true" />
-                  )}
-                </div>
-
-                <div
-                  ref={(el) => {
-                    boardRefs.current[index] = el;
-                  }}
-                >
-                  <BoardPanel board={board} lightMode={lightMode} />
-                </div>
-              </div>
-            );
-          })}
+          {boards.map((board) => (
+            <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
+              <BoardPanel board={board} lightMode={lightMode} />
+            </div>
+          ))}
         </div>
       </section>
     </main>
