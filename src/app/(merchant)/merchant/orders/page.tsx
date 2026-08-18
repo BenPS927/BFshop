@@ -213,8 +213,8 @@ export default function MerchantOrdersPage() {
           : "bg-[radial-gradient(1200px_500px_at_15%_-10%,rgba(255,255,255,0.06),transparent_60%),linear-gradient(180deg,#050505_0%,#0A0A0A_45%,#121212_100%)] text-white"
       }`}
     >
-      <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1600px] grid-rows-[auto_1fr] gap-6 pt-5 md:min-h-[calc(100vh-4rem)] md:gap-8 md:pt-0 lg:min-h-[calc(100vh-6rem)] lg:gap-12">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 pb-2 md:pb-0">
+      <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1600px] grid-rows-[auto_1fr] gap-6 md:min-h-[calc(100vh-4rem)] md:gap-8 lg:min-h-[calc(100vh-6rem)] lg:gap-12">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
           <div className="pt-2">
             <Link
               href="/merchant"
@@ -249,26 +249,12 @@ export default function MerchantOrdersPage() {
           </button>
         </header>
 
-        <div className="mt-2 md:mt-0">
-          <div className="mb-4 flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-400 md:hidden">
-            <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/50 bg-sky-400/10 px-2.5 py-1.5" aria-label="Scroll left">
-              <span aria-hidden="true">←</span>
-              <span>left</span>
-            </span>
-            <span className="px-2 text-sky-300">scroll</span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/50 bg-sky-400/10 px-2.5 py-1.5" aria-label="Scroll right">
-              <span>right</span>
-              <span aria-hidden="true">→</span>
-            </span>
-          </div>
-
-          <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5 md:-mr-6 md:gap-6 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
-            {boards.map((board) => (
-              <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
-                <BoardPanel board={board} lightMode={lightMode} />
-              </div>
-            ))}
-          </div>
+        <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:-mr-6 md:gap-6 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
+          {boards.map((board) => (
+            <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
+              <BoardPanel board={board} lightMode={lightMode} />
+            </div>
+          ))}
         </div>
       </section>
     </main>
