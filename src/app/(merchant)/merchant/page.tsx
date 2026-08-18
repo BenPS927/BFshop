@@ -73,7 +73,7 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
     </>
   );
 
-  if ("href" in board) {
+  if (typeof board.href === "string") {
     return (
       <Link
         href={board.href}
