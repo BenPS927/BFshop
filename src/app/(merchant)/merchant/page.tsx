@@ -111,8 +111,8 @@ export default function MerchantPage() {
       }`}
     >
       <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1600px] grid-rows-[auto_1fr] gap-4 md:min-h-[calc(100vh-4rem)] md:gap-8 lg:min-h-[calc(100vh-6rem)] lg:gap-12">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 md:pb-0">
-          <div className="pt-2">
+        <header className="grid grid-cols-[1fr_auto] items-start gap-4 md:grid-cols-[1fr_auto_1fr] md:pb-0">
+          <div className="order-2 pt-2 md:order-none">
             <Link
               href="/"
               className={`font-inter text-xs font-semibold uppercase tracking-[0.14em] transition ${
@@ -124,7 +124,7 @@ export default function MerchantPage() {
           </div>
 
           <h1
-            className={`border-b p-2 text-center font-bebas text-4xl leading-tight tracking-[0.12em] md:text-5xl lg:p-8 lg:text-6xl ${
+            className={`order-1 col-span-2 border-b p-2 text-center font-bebas text-4xl leading-tight tracking-[0.12em] md:order-none md:col-span-1 md:text-5xl lg:p-8 lg:text-6xl ${
               lightMode ? "border-sky-700" : "border-sky-400"
             }`}
           >
@@ -136,7 +136,7 @@ export default function MerchantPage() {
             onClick={toggleTheme}
             aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
             title={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            className={`justify-self-end grid size-11 shrink-0 place-items-center border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
+            className={`order-3 justify-self-end grid size-11 shrink-0 place-items-center border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 md:order-none ${
               lightMode
                 ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700"
                 : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"
@@ -146,7 +146,7 @@ export default function MerchantPage() {
           </button>
         </header>
 
-        <div className="md:mt-0">
+        <div className="min-w-0 md:mt-0">
           <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:-mr-6 md:gap-6 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
             {boards.map((board) => (
               <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
