@@ -105,8 +105,8 @@ export default function MerchantPage() {
           : "bg-[radial-gradient(1200px_500px_at_15%_-10%,rgba(255,255,255,0.06),transparent_60%),linear-gradient(180deg,#050505_0%,#0A0A0A_45%,#121212_100%)] text-white"
       }`}
     >
-      <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1600px] grid-rows-[auto_1fr] gap-6 md:min-h-[calc(100vh-4rem)] md:gap-8 lg:min-h-[calc(100vh-6rem)] lg:gap-12">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
+      <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1600px] grid-rows-[auto_1fr] gap-4 pt-3 md:min-h-[calc(100vh-4rem)] md:gap-8 md:pt-0 lg:min-h-[calc(100vh-6rem)] lg:gap-12">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 pb-1 md:pb-0">
           <div className="pt-2">
             <Link
               href="/"
@@ -123,7 +123,7 @@ export default function MerchantPage() {
               lightMode ? "border-sky-700" : "border-sky-400"
             }`}
           >
-            BF <span className={lightMode ? "text-sky-700" : "text-sky-400"}>Customer</span>
+            BF <span className={lightMode ? "text-sky-700" : "text-sky-400"}>Merchant</span>
           </h1>
 
           <button
@@ -141,12 +141,20 @@ export default function MerchantPage() {
           </button>
         </header>
 
-        <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:-mr-6 md:gap-6 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
-          {boards.map((board) => (
-            <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
-              <BoardPanel board={board} lightMode={lightMode} />
-            </div>
-          ))}
+        <div className="mt-1 md:mt-0">
+          <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-400 md:hidden">
+            <span aria-hidden="true">←</span>
+            <span>scroll</span>
+            <span aria-hidden="true">→</span>
+          </div>
+
+          <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 md:-mr-6 md:gap-6 md:pb-2 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
+            {boards.map((board) => (
+              <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
+                <BoardPanel board={board} lightMode={lightMode} />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </main>

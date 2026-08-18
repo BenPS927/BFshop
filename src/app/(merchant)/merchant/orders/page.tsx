@@ -46,18 +46,20 @@ export default function MerchantOrdersPage() {
   const receivedContent = receivedOrders.map((entry) => (
     <article
       key={entry.id}
-      className="grid gap-3 border border-white/15 bg-white/[0.06] p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:gap-4 md:p-6"
+      className={`grid gap-3 border p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:gap-4 md:p-6 ${
+        lightMode ? "border-zinc-300 bg-white text-zinc-900" : "border-white/15 bg-white/[0.06] text-white"
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-inter text-lg font-medium leading-snug text-white md:text-xl">
+        <h3 className={`font-inter text-lg font-medium leading-snug md:text-xl ${lightMode ? "text-zinc-900" : "text-white"}`}>
           Order #{entry.id}
         </h3>
-        <span className="shrink-0 font-inter text-sm font-medium leading-none text-sky-300 md:text-base">
+        <span className={`shrink-0 font-inter text-sm font-medium leading-none md:text-base ${lightMode ? "text-sky-700" : "text-sky-300"}`}>
           ${entry.total.toFixed(2)}
         </span>
       </div>
 
-      <div className="border-t border-white/15 pt-3 font-inter text-xs leading-normal text-zinc-400 md:pt-4 md:text-sm">
+      <div className={`border-t pt-3 font-inter text-xs leading-normal md:pt-4 md:text-sm ${lightMode ? "border-zinc-200 text-zinc-600" : "border-white/15 text-zinc-400"}`}>
         <p>Customer #{entry.customer_id}</p>
         <p className="mt-2">Received {new Date(entry.created_at).toLocaleString()}</p>
       </div>
@@ -65,7 +67,11 @@ export default function MerchantOrdersPage() {
       <button
         type="button"
         onClick={() => markAsSent(entry.id)}
-        className="justify-self-start border border-sky-400/50 px-3 py-2 font-inter text-sm font-medium leading-none text-sky-300 transition hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+        className={`justify-self-start border px-3 py-2 font-inter text-sm font-medium leading-none transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${
+          lightMode
+            ? "border-sky-600/50 text-sky-700 hover:border-sky-600 hover:bg-sky-50 hover:text-sky-900"
+            : "border-sky-400/50 text-sky-300 hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100"
+        }`}
       >
         Mark as sent
       </button>
@@ -75,25 +81,31 @@ export default function MerchantOrdersPage() {
   const sentContent = sentOrders.map((entry) => (
     <article
       key={entry.id}
-      className="grid gap-3 border border-white/15 bg-white/[0.06] p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:gap-4 md:p-6"
+      className={`grid gap-3 border p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:gap-4 md:p-6 ${
+        lightMode ? "border-zinc-300 bg-white text-zinc-900" : "border-white/15 bg-white/[0.06] text-white"
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-inter text-lg font-medium leading-snug text-white md:text-xl">
+        <h3 className={`font-inter text-lg font-medium leading-snug md:text-xl ${lightMode ? "text-zinc-900" : "text-white"}`}>
           Order #{entry.id}
         </h3>
-        <span className="shrink-0 font-inter text-sm font-medium leading-none text-sky-300 md:text-base">
+        <span className={`shrink-0 font-inter text-sm font-medium leading-none md:text-base ${lightMode ? "text-sky-700" : "text-sky-300"}`}>
           ${entry.total.toFixed(2)}
         </span>
       </div>
 
-      <div className="border-t border-white/15 pt-3 font-inter text-xs leading-normal text-zinc-400 md:pt-4 md:text-sm">
+      <div className={`border-t pt-3 font-inter text-xs leading-normal md:pt-4 md:text-sm ${lightMode ? "border-zinc-200 text-zinc-600" : "border-white/15 text-zinc-400"}`}>
         <p>Customer #{entry.customer_id}</p>
         <p className="mt-2">Sent {new Date(entry.created_at).toLocaleString()}</p>
       </div>
       <button
         type="button"
         onClick={() => markAsDelivered(entry.id)}
-        className="justify-self-start border border-sky-400/50 px-3 py-2 font-inter text-sm font-medium leading-none text-sky-300 transition hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+        className={`justify-self-start border px-3 py-2 font-inter text-sm font-medium leading-none transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${
+          lightMode
+            ? "border-sky-600/50 text-sky-700 hover:border-sky-600 hover:bg-sky-50 hover:text-sky-900"
+            : "border-sky-400/50 text-sky-300 hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100"
+        }`}
       >
         Mark as sent
       </button>
