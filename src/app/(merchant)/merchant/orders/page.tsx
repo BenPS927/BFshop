@@ -118,49 +118,49 @@ export default function MerchantOrdersPage() {
     },
   ];
 
-  useEffect(() => {
-    async function loadReceivedOrders() {
-      console.log("[received orders] requesting /api/merchant/receivedOrders");
-      const response = await fetch("/api/merchant/receivedOrders");
+  const loadReceivedOrders = async () => {
+    console.log("[received orders] requesting /api/merchant/receivedOrders");
+    const response = await fetch("/api/merchant/receivedOrders");
 
-      console.log("[received orders] API response", {
+    console.log("[received orders] API response", {
+      status: response.status,
+      ok: response.ok,
+    });
+
+    if (!response.ok) {
+      throw new Error("Unable to load received orders");
+    }
+
+    const orders: ReceivedOrder[] = await response.json();
+    console.log("[received orders] received API payload", { count: orders.length });
+    setReceivedOrders(orders);
+  };
+
+  const loadSentOrders = async () => {
+    try {
+      console.log("[sent orders] requesting /api/merchant/sentOrders");
+      const response = await fetch("/api/merchant/sentOrders");
+
+      console.log("[sent orders] API response", {
         status: response.status,
         ok: response.ok,
       });
 
       if (!response.ok) {
-        throw new Error("Unable to load received orders");
+        throw new Error("Unable to load sent orders");
       }
 
       const orders: ReceivedOrder[] = await response.json();
-      console.log("[received orders] received API payload", { count: orders.length });
-      setReceivedOrders(orders);
+      console.log("[sent orders] received API payload", { count: orders.length });
+      setSentOrders(orders);
+    } catch (error) {
+      console.error("[sent orders] error loading sent orders", error);
     }
+  };
 
-    async function loadSentOrders() {
-      try {
-        console.log("[sent orders] requesting /api/merchant/sentOrders");
-        const response = await fetch("/api/merchant/sentOrders");
-
-        console.log("[sent orders] API response", {
-          status: response.status,
-          ok: response.ok,
-        });
-
-        if (!response.ok) {
-          throw new Error("Unable to load sent orders");
-        }
-
-        const orders: ReceivedOrder[] = await response.json();
-        console.log("[sent orders] received API payload", { count: orders.length });
-        setSentOrders(orders);
-      } catch (error) {
-        console.error("[sent orders] error loading sent orders", error);
-      }
-    }
-
-    loadReceivedOrders();
-    loadSentOrders();
+  useEffect(() => {
+    void loadReceivedOrders();
+    void loadSentOrders();
   }, []);
 
   function toggleTheme() {
@@ -172,15 +172,25 @@ export default function MerchantOrdersPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId }),
-    })
+    });
+
+    if (response.ok) {
+      await loadReceivedOrders();
+      await loadSentOrders();
+    }
   }
 
   async function markAsDelivered(orderId: number) {
-    const response = await fetch("/api/merchant/markAsSent", {
+    const response = await fetch("/api/merchant/markAsDelivered", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId }),
-    })
+    });
+
+    if (response.ok) {
+      await loadReceivedOrders();
+      await loadSentOrders();
+    }
   }
 
   return (
