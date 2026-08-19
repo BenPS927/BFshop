@@ -8,14 +8,12 @@ import { BackendOrderItem, CreatedOrder, WrittenOrderItems } from "@/app/types/o
 import { prisma } from "@/server/db";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
-export async function generatedOrderService(
-    order: FrontendOrder,
-) {
+export async function generatedOrderService(order: FrontendOrder) {
 
-    console.log("SERVICE: Starting createOrderService");
+    console.log("SERVICE: Starting generatedOrderService");
 
     return await (async (tx: Prisma.TransactionClient | PrismaClient) => {
-        console.log("SERVICE: Order generation started");
+        console.log("SERVICE: Generated order processing started");
 
         async function processCustomer(
             tx: Prisma.TransactionClient | PrismaClient,
@@ -25,17 +23,21 @@ export async function generatedOrderService(
                 const existingCustomer = await GetCustomer_DB_op(tx, customer.id);
 
                 if (existingCustomer) {
+                    console.log("SERVICE: Existing customer found", existingCustomer.id);
                     return existingCustomer;
                 }
             }
 
+            console.log("SERVICE: Creating new customer");
             return await writeNewCustomer_DB_op(tx, customer);
         }
 
         const savedCustomer = await processCustomer(tx, order.customer);
-        console.log("SERVICE: Customer ready", savedCustomer);
+        console.log("SERVICE: Customer ready", savedCustomer.id);
 
-        console.log("SERVICE: Processing product");
+        console.log("SERVICE: Processing products", {
+            itemCount: order.orderItems.length,
+        });
 
         const productIds = order.orderItems.map((item) => {
             return item.productId;
@@ -46,7 +48,9 @@ export async function generatedOrderService(
             productIds: number[]
         ): Promise<Awaited<ReturnType<typeof GetProduct_DB_op>>> {
             const products = await GetProduct_DB_op(tx, productIds);
-            console.log("SERVICE: received product");
+            console.log("SERVICE: Products received", {
+                productCount: products.length,
+            });
 
             order.orderItems.map((item) => {
                 const product = products.find(
@@ -92,7 +96,9 @@ export async function generatedOrderService(
         }
 
         const orderItems = createOrderItems(order);
-        console.log("SERVICE: Order items created", orderItems);
+        console.log("SERVICE: Order items prepared", {
+            itemCount: orderItems.length,
+        });
 
         async function createOrder(
             tx: Prisma.TransactionClient | PrismaClient,
@@ -114,11 +120,12 @@ export async function generatedOrderService(
             };
 
             const createdOrder = await WriteOrder_DB_op(tx, orderData);
+            console.log("SERVICE: Generated order written", createdOrder.id);
             return createdOrder;
         }
 
         const createdOrder = await createOrder(tx, savedCustomer, orderItems);
-        console.log("SERVICE: Order created", createdOrder);
+        console.log("SERVICE: Order created", createdOrder.id);
 
         async function writeOrderItems(
             tx: Prisma.TransactionClient | PrismaClient,
@@ -139,8 +146,11 @@ export async function generatedOrderService(
             orderItems,
             createdOrder
         );
-        console.log("SERVICE: Order items written to database");
+        console.log("SERVICE: Order items written to database", {
+            itemCount: writtenOrderItems.length,
+        });
 
+        console.log("SERVICE: Generated order completed", createdOrder.id);
         return createdOrder;
 
     })(prisma);

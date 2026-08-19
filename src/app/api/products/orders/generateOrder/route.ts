@@ -8,7 +8,9 @@ export async function POST(request: Request) {
 
         const order: GeneratedOrderRequest = await request.json();
 
-        console.log("API: Parsed order", order);
+        console.log("API: Parsed generated order", {
+            itemCount: order.orderItems?.length ?? 0,
+        });
 
         if (!order.orderItems || order.orderItems.length === 0) {
             return Response.json(
@@ -17,11 +19,11 @@ export async function POST(request: Request) {
             );
         }
 
-        console.log("API: Calling createOrderService");
+        console.log("API: Calling generatedOrderService");
 
         const createdOrder = await generatedOrderService(order);
 
-        console.log("API: Service returned", createdOrder);
+        console.log("API: Generated order service returned", createdOrder.id);
 
         return Response.json(createdOrder, { status: 201 });
 

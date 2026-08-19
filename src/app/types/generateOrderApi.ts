@@ -10,6 +10,7 @@ export interface OrderItemsRequest {
 
 export interface CustomerInput { 
     name: string, 
+    email: string,
     address: string, 
     age: number,
     gender: string,

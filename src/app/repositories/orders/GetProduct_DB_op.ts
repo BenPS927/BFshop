@@ -4,7 +4,9 @@ import type { PrismaClient } from "@/generated/prisma/client";
 export async function GetProduct_DB_op(tx: Prisma.TransactionClient | PrismaClient, productIds: number[]) {
     
 
-    console.log("Getproduct_DB_ops: Looking up products");
+    console.log("GetProduct_DB_op: Looking up products", {
+        requestedCount: productIds.length,
+    });
     
     const products = await tx.product.findMany({    
         where: {                                    
@@ -18,7 +20,9 @@ export async function GetProduct_DB_op(tx: Prisma.TransactionClient | PrismaClie
     throw new Error("One or more products not found");
 }
 
-    console.log("CHECKS: product lookup result", products);
+    console.log("GetProduct_DB_op: Products lookup completed", {
+        productCount: products.length,
+    });
 
 
     return products

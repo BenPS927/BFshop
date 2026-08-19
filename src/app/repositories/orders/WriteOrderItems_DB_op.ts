@@ -5,7 +5,11 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 export async function WriteOrderItems_DB_op(tx: Prisma.TransactionClient | PrismaClient, orderItems: BackendOrderItem, createdOrder: CreatedOrder) {
 
-    console.log("WriteOrderItems_DB_ops: Writing new order items");
+    console.log("WriteOrderItems_DB_op: Writing order item", {
+        orderId: createdOrder.id,
+        productId: orderItems.product_id,
+        quantity: orderItems.quantity,
+    });
 
     const writtenOrderItems = await tx.orderItem.create({
         data: {
@@ -18,6 +22,7 @@ export async function WriteOrderItems_DB_op(tx: Prisma.TransactionClient | Prism
         }
     });
 
+    console.log("WriteOrderItems_DB_op: Order item created", writtenOrderItems.id);
     return writtenOrderItems
 
 }

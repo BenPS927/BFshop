@@ -11,6 +11,7 @@ export interface FrontendOrderItems {
 export interface Customer {
     id?: number, 
     name: string, 
+    email: string,
     address: string, 
     age: number,
     gender: string,

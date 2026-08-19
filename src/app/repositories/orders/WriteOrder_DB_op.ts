@@ -4,7 +4,10 @@ import { WriteNewOrder } from "@/app/types/orders";
 
 export async function WriteOrder_DB_op(tx: Prisma.TransactionClient | PrismaClient, newOrder: WriteNewOrder) {
 
-    console.log("WriteOrder_DB_ops: Writing new order");
+    console.log("WriteOrder_DB_op: Writing new order", {
+        customerId: newOrder.customerId,
+        total: newOrder.total,
+    });
 
     const createdOrder = await tx.order.create({
         data: {
@@ -14,6 +17,7 @@ export async function WriteOrder_DB_op(tx: Prisma.TransactionClient | PrismaClie
         }
     });
 
+    console.log("WriteOrder_DB_op: Order created", createdOrder.id);
     return createdOrder 
 
 }
