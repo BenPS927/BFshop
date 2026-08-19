@@ -10,8 +10,6 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 export async function generatedOrderService(
     order: FrontendOrder,
-    customer: Customer,
-    FrontendOrderItems: FrontendOrder["orderItems"]
 ) {
 
     console.log("SERVICE: Starting createOrderService");
