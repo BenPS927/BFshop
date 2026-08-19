@@ -18,3 +18,17 @@ export async function GetCustomer_DB_op(tx: Prisma.TransactionClient | PrismaCli
   
     return customer
 }
+
+export async function GetCustomerByEmail_DB_op(tx: Prisma.TransactionClient | PrismaClient, email: string) {
+    console.log("GetCustomerByEmail_DB_op: Looking up customer", email);
+
+    const customer = await tx.customer.findUnique({
+        where: { email }
+    });
+
+    console.log("GetCustomerByEmail_DB_op: Customer lookup completed", {
+        found: customer !== null,
+    });
+
+    return customer;
+}

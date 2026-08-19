@@ -1,4 +1,4 @@
-import { GetCustomer_DB_op } from "@/app/repositories/orders/GetCustomer_DB_op";
+import { GetCustomerByEmail_DB_op, GetCustomer_DB_op } from "@/app/repositories/orders/GetCustomer_DB_op";
 import { writeNewCustomer_DB_op } from "@/app/repositories/orders/writeNewCustomer_DB_op";
 import { GetProduct_DB_op } from "@/app/repositories/orders/GetProduct_DB_op";
 import { WriteOrder_DB_op } from "@/app/repositories/orders/WriteOrder_DB_op";
@@ -24,6 +24,13 @@ export async function generatedOrderService(order: FrontendOrder) {
 
                 if (existingCustomer) {
                     console.log("SERVICE: Existing customer found", existingCustomer.id);
+                    return existingCustomer;
+                }
+            } else {
+                const existingCustomer = await GetCustomerByEmail_DB_op(tx, customer.email);
+
+                if (existingCustomer) {
+                    console.log("SERVICE: Existing customer found by email", existingCustomer.id);
                     return existingCustomer;
                 }
             }
