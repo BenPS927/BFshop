@@ -13,11 +13,6 @@ export async function GetCustomer_DB_op(tx: Prisma.TransactionClient | PrismaCli
     )
 
     console.log("CHECKS: Customer lookup result", customer);
-
-    if (!customer) {                               
-        throw new Error("Customer not found");
-    }
-
-
+  
     return customer
 }

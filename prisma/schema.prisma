@@ -13,7 +13,11 @@ datasource db {
 }
 
 model Customer {
-  id Int @id
+  id      Int    @id @default(autoincrement())
+  name    String
+  address String
+  age     Int
+  gender  String
 }
 
 model Product {

@@ -148,9 +148,7 @@ export default function BFCustomerPage(){
     async function placeOrder(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault(); 
 
-       
-
-        const orderItems  = cartItems.map(item => ({
+       const orderItems  = cartItems.map(item => ({
             productId:item.id,
             quantity: item.amount,
         }))

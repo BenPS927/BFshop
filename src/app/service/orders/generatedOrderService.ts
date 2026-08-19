@@ -1,46 +1,45 @@
 import { GetCustomer_DB_op } from "@/app/repositories/orders/GetCustomer_DB_op";
+import { writeNewCustomer_DB_op } from "@/app/repositories/orders/writeNewCustomer_DB_op";
 import { GetProduct_DB_op } from "@/app/repositories/orders/GetProduct_DB_op";
 import { WriteOrder_DB_op } from "@/app/repositories/orders/WriteOrder_DB_op";
 import { WriteOrderItems_DB_op } from "@/app/repositories/orders/WriteOrderItems_DB_op";
-import {
-    BackendOrderItem,
-    CreateOrderRequest,
-    CreatedOrder,
-    CustomerType,
-    WrittenOrderItems,
-} from "@/app/types/orders";
+import { FrontendOrder, Customer } from "@/app/types/generateOrder";
+import { BackendOrderItem, CreatedOrder, WrittenOrderItems } from "@/app/types/orders";
 import { prisma } from "@/server/db";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
-export async function createOrderService(order: CreateOrderRequest) {
+export async function generatedOrderService(
+    order: FrontendOrder,
+    customer: Customer,
+    FrontendOrderItems: FrontendOrder["orderItems"]
+) {
+
     console.log("SERVICE: Starting createOrderService");
 
     return await (async (tx: Prisma.TransactionClient | PrismaClient) => {
-        console.log("SERVICE: Order write started");
-
-        console.log("SERVICE: Processing customer");
-
-        const customerId = order.customerId;
+        console.log("SERVICE: Order generation started");
 
         async function processCustomer(
             tx: Prisma.TransactionClient | PrismaClient,
-            customerId: number
-        ): Promise<CustomerType> {
-            const customer = await GetCustomer_DB_op(tx, customerId);
-            console.log("SERVICE: received customer");
+            customer: Customer
+        ) {
+            if (customer.id !== undefined) {
+                const existingCustomer = await GetCustomer_DB_op(tx, customer.id);
 
-            if (!customer) {
-                throw new Error(`Customer with ID ${customerId} was not found`);
+                if (existingCustomer) {
+                    return existingCustomer;
+                }
             }
 
-            return customer;
+            return await writeNewCustomer_DB_op(tx, customer);
         }
 
-        const customer = await processCustomer(tx, customerId);
+        const savedCustomer = await processCustomer(tx, order.customer);
+        console.log("SERVICE: Customer ready", savedCustomer);
 
         console.log("SERVICE: Processing product");
 
-        const productIds = order.items.map((item) => {
+        const productIds = order.orderItems.map((item) => {
             return item.productId;
         });
 
@@ -51,7 +50,7 @@ export async function createOrderService(order: CreateOrderRequest) {
             const products = await GetProduct_DB_op(tx, productIds);
             console.log("SERVICE: received product");
 
-            order.items.map((item) => {
+            order.orderItems.map((item) => {
                 const product = products.find(
                     (product) => product.id === item.productId
                 );
@@ -72,8 +71,8 @@ export async function createOrderService(order: CreateOrderRequest) {
 
         const products = await processProduct(tx, productIds);
 
-        function createOrderItems(order: CreateOrderRequest) {
-            return order.items.map((item) => {
+        function createOrderItems(order: FrontendOrder) {
+            return order.orderItems.map((item) => {
                 const product = products.find(
                     (product) => product.id === item.productId
                 );
@@ -99,9 +98,13 @@ export async function createOrderService(order: CreateOrderRequest) {
 
         async function createOrder(
             tx: Prisma.TransactionClient | PrismaClient,
-            customer: CustomerType,
+            customer: Customer,
             orderItems: BackendOrderItem[]
         ) {
+            if (customer.id === undefined) {
+                throw new Error("Customer must have an ID before creating an order");
+            }
+
             const total = orderItems.reduce((total, item) => {
                 return total + item.line_total;
             }, 0);
@@ -113,11 +116,10 @@ export async function createOrderService(order: CreateOrderRequest) {
             };
 
             const createdOrder = await WriteOrder_DB_op(tx, orderData);
-
             return createdOrder;
         }
 
-        const createdOrder = await createOrder(tx, customer, orderItems);
+        const createdOrder = await createOrder(tx, savedCustomer, orderItems);
         console.log("SERVICE: Order created", createdOrder);
 
         async function writeOrderItems(
@@ -142,5 +144,6 @@ export async function createOrderService(order: CreateOrderRequest) {
         console.log("SERVICE: Order items written to database");
 
         return createdOrder;
+
     })(prisma);
 }
