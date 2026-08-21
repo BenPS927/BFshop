@@ -34,7 +34,7 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
         ? ["← Order Hub", "→ Overwatch"]
         : ["← Data"];
 
-  const panelClassName = `flex min-h-[calc(100dvh-11.5rem)] flex-col border p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-6 lg:h-full lg:min-h-0 ${
+  const panelClassName = `flex min-h-[calc(100dvh-11.5rem)] flex-col rounded-lg border p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-6 lg:h-full lg:min-h-0 ${
         lightMode
           ? "border-zinc-300 bg-white text-zinc-950"
           : "border-white/15 bg-white/[0.07] text-white"
@@ -62,7 +62,7 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
 
       <div className="flex flex-1 flex-col justify-center py-6">
         <div
-          className={`border border-dashed p-4 md:p-6 ${
+          className={`rounded-md border border-dashed p-4 md:p-6 ${
             lightMode ? "border-zinc-300 bg-zinc-50" : "border-white/15 bg-black/10"
           }`}
         >
@@ -129,7 +129,7 @@ export default function MerchantPage() {
             onClick={toggleTheme}
             aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
             title={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            className={`order-3 justify-self-end grid size-11 shrink-0 place-items-center border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 md:order-none ${
+            className={`order-3 justify-self-end grid size-11 shrink-0 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 md:order-none ${
               lightMode
                 ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700"
                 : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"
