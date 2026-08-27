@@ -13,4 +13,4 @@ export async function totalsDashboard() {
             <p>{revenue}</p>
         </div>
     )
-}w
+}
