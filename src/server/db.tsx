@@ -20,7 +20,6 @@ const globalForPrisma = globalThis as unknown as {
 
 const adapter = new PrismaPg({
   connectionString: databaseUrl.toString(),
-  family: 4,
 });
 
 export const prisma =
