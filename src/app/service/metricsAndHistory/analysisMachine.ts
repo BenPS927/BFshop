@@ -18,7 +18,7 @@ export async function analysisMachine(request: AnalysisRequest) {
 
     const filters = (request.filters ?? [])
 
-    for (const filter of filters) {e
+    for (const filter of filters) {
         if (filter.category === "gender") {
             orders = filterByGender(orders, filter.parameters);
         }
