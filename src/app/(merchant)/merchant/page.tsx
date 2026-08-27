@@ -14,8 +14,9 @@ const boards = [
   },
   {
     id: "inventory",
+    href: "/merchant/data",
     title: "Data",
-    description: "Once AI is integrated, this board will display real-time data.",
+    description: "Run analysis requests against your order data and inspect the output.",
   },
   {
     id: "operations",

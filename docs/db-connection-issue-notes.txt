@@ -1,0 +1,60 @@
+DATABASE CONNECTION ISSUE — NOTES (2026-08-26)
+================================================
+
+THE PROBLEM (plain English)
+----------------------------
+The app couldn't talk to the database (Neon/Postgres). It wasn't a Node.js
+reinstall issue, not a firewall issue, and not a code/schema mistake.
+
+Every computer connects to the internet using two "address systems":
+IPv4 (the old, common one) and IPv6 (the newer one). When Node.js looks up
+the database's address, it gets both an IPv4 and an IPv6 address, and by
+default it tries both at almost the same time to see which one answers
+first (this is called "Happy Eyeballs").
+
+The problem: this network's IPv6 addresses don't actually work (no real
+route to the internet over IPv6), so every connection attempt would sit
+around trying the broken IPv6 path, time out, and eventually fail —
+even though the IPv4 path was working fine the whole time.
+
+THE FIX (plain English)
+------------------------
+We told Node.js: "Don't bother trying IPv6, and don't race both address
+types — just use IPv4 directly." That skips the broken path entirely and
+connects immediately over the address that actually works.
+
+TECHNICAL DETAILS
+------------------
+File changed: src/server/db.tsx
+
+Added:
+  dns.setDefaultResultOrder("ipv4first");
+  net.setDefaultAutoSelectFamily(false);
+
+Why both were needed:
+- `dns.setDefaultResultOrder("ipv4first")` makes DNS lookups prefer IPv4
+  results first.
+- `net.setDefaultAutoSelectFamily(false)` turns off Node's Happy Eyeballs
+  dual-stack racing behavior entirely, so it won't attempt the IPv6
+  address at all.
+- Passing `family: 4` to the `pg`/Prisma adapter config was NOT enough on
+  its own, because `pg` doesn't forward that option down to the raw
+  `net.connect()` call, so Happy Eyeballs was still racing IPv6 under the
+  hood regardless.
+
+VERIFIED FIX
+------------
+Ran a small standalone script that imports the real Prisma client from
+src/server/db.tsx and queries the database. Before the fix: ETIMEDOUT /
+ENETUNREACH errors on IPv6 addresses. After the fix: successful query
+returning "customer count: 395".
+
+UNRELATED THINGS RULED OUT ALONG THE WAY
+------------------------------------------
+- Reinstalling Node.js: not the cause.
+- Slow `npm run dev`: separate issue — caused by (1) a stale/duplicate
+  `next dev` process already holding port 3000, and (2) the project
+  living inside a OneDrive-synced folder, which fights with webpack's
+  file watching/writes in `.next/` and `node_modules/`. Recommended fix:
+  stop duplicate dev servers, and exclude `.next/` and `node_modules/`
+  from OneDrive sync (or move the project outside OneDrive).
