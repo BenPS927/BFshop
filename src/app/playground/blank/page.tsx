@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMerchantTheme } from "../../(merchant)/merchant/useMerchantTheme";
 import type { AnalysisRequest, Filter, Metric } from "../../types/analysisMachine";
+import { syntheticSuburbs } from "@/data/syntheticEconomy/locations";
 
 const portalAreas = [
   {
@@ -28,7 +29,8 @@ const portalAreas = [
   },
 ] as const;
 
-const allMetrics: Metric[] = ["revenue", "sales", "customers", "orders", "itemsSold"];
+const allMetrics = ["revenue", "sales", "itemsSold"] as const satisfies readonly Metric[];
+type AvailableMetric = (typeof allMetrics)[number];
 
 type FilterDraft =
   | { id: string; category: "gender"; value: string }
@@ -53,11 +55,9 @@ function toFilter(draft: FilterDraft): Filter | null {
 }
 
 function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
-  const [metrics, setMetrics] = useState<Record<Metric, boolean>>({
+  const [metrics, setMetrics] = useState<Record<AvailableMetric, boolean>>({
     revenue: true,
     sales: false,
-    customers: false,
-    orders: false,
     itemsSold: false,
   });
   const [periodEnabled, setPeriodEnabled] = useState(false);
@@ -82,7 +82,7 @@ function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
     return built;
   }, [metrics, periodEnabled, startDate, endDate, filterDrafts]);
 
-  function toggleMetric(metric: Metric) {
+  function toggleMetric(metric: AvailableMetric) {
     setMetrics((current) => ({ ...current, [metric]: !current[metric] }));
   }
 
@@ -137,8 +137,8 @@ function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
       </div>
 
       <div className="mb-5">
-        <label className={`flex items-center gap-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] ${muted}`}>
-          <input type="checkbox" checked={periodEnabled} onChange={(event) => setPeriodEnabled(event.target.checked)} />
+        <label className={`flex cursor-not-allowed items-center gap-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] opacity-40 ${muted}`}>
+          <input type="checkbox" checked={periodEnabled} onChange={(event) => setPeriodEnabled(event.target.checked)} disabled />
           Date range
         </label>
         {periodEnabled && (
@@ -164,7 +164,20 @@ function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
               <span className="font-inter text-xs font-semibold uppercase tracking-[0.08em] text-sky-500">{draft.category}</span>
               {draft.category === "gender" && <input placeholder="e.g. female" value={draft.value} onChange={(event) => updateFilter(draft.id, { value: event.target.value })} className={`min-w-0 flex-1 rounded-md border p-1.5 font-inter text-sm outline-none focus:border-sky-400 ${field}`} />}
               {draft.category === "age" && <><input type="number" placeholder="min" value={draft.min} onChange={(event) => updateFilter(draft.id, { min: event.target.value })} className={`w-24 min-w-0 flex-1 rounded-md border p-1.5 font-inter text-sm outline-none focus:border-sky-400 ${field}`} /><input type="number" placeholder="max" value={draft.max} onChange={(event) => updateFilter(draft.id, { max: event.target.value })} className={`w-24 min-w-0 flex-1 rounded-md border p-1.5 font-inter text-sm outline-none focus:border-sky-400 ${field}`} /></>}
-              {draft.category === "location" && <input placeholder="e.g. Austin" value={draft.value} onChange={(event) => updateFilter(draft.id, { value: event.target.value })} className={`min-w-0 flex-1 rounded-md border p-1.5 font-inter text-sm outline-none focus:border-sky-400 ${field}`} />}
+              {draft.category === "location" && (
+                <select
+                  value={draft.value}
+                  onChange={(event) => updateFilter(draft.id, { value: event.target.value })}
+                  className={`min-w-0 flex-1 rounded-md border p-1.5 font-inter text-sm outline-none focus:border-sky-400 ${field}`}
+                >
+                  <option value="">Select suburb</option>
+                  {syntheticSuburbs.map((suburb) => (
+                    <option key={suburb} value={suburb}>
+                      {suburb}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button type="button" onClick={() => setFilterDrafts((current) => current.filter((entry) => entry.id !== draft.id))} className="font-inter text-xs text-rose-400 hover:text-rose-300">Remove</button>
             </div>
           ))}

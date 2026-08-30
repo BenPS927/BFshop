@@ -7,8 +7,10 @@ import { useMemo, useState } from "react";
 import { useMerchantTheme } from "../useMerchantTheme";
 import type { AnalysisRequest, AnalysisResult, Filter, Metric } from "@/app/types/analysisMachine";
 import { RevenueCharts } from "@/components/merchant/data/RevenueCharts";
+import { syntheticSuburbs } from "@/data/syntheticEconomy/locations";
 
-const allMetrics: Metric[] = ["revenue", "sales", "customers", "orders", "itemsSold"];
+const allMetrics = ["revenue", "sales", "itemsSold"] as const satisfies readonly Metric[];
+type AvailableMetric = (typeof allMetrics)[number];
 
 type FilterDraft =
   | { id: string; category: "gender"; value: string }
@@ -36,11 +38,9 @@ function toFilter(draft: FilterDraft): Filter | null {
 
 export default function MerchantDataPage() {
   const { lightMode, toggleTheme } = useMerchantTheme();
-  const [metrics, setMetrics] = useState<Record<Metric, boolean>>({
+  const [metrics, setMetrics] = useState<Record<AvailableMetric, boolean>>({
     revenue: true,
     sales: false,
-    customers: false,
-    orders: false,
     itemsSold: false,
   });
   const [periodEnabled, setPeriodEnabled] = useState(false);
@@ -67,7 +67,7 @@ export default function MerchantDataPage() {
     return built;
   }, [metrics, periodEnabled, startDate, endDate, filterDrafts]);
 
-  function toggleMetric(metric: Metric) {
+  function toggleMetric(metric: AvailableMetric) {
     setMetrics((current) => ({ ...current, [metric]: !current[metric] }));
   }
 
@@ -146,8 +146,8 @@ export default function MerchantDataPage() {
             </div>
 
             <div className="mb-5">
-              <label className={`flex items-center gap-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] ${muted}`}>
-                <input type="checkbox" checked={periodEnabled} onChange={(event) => setPeriodEnabled(event.target.checked)} />
+              <label className={`flex cursor-not-allowed items-center gap-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] opacity-40 ${muted}`}>
+                <input type="checkbox" checked={periodEnabled} onChange={(event) => setPeriodEnabled(event.target.checked)} disabled />
                 Date range
               </label>
               {periodEnabled && (
@@ -187,7 +187,18 @@ export default function MerchantDataPage() {
                     )}
 
                     {draft.category === "location" && (
-                      <input placeholder="e.g. Austin" value={draft.value} onChange={(event) => updateFilter(draft.id, { value: event.target.value })} className={`flex-1 rounded-md border p-1.5 font-inter text-sm outline-none focus:border-sky-400 ${field}`} />
+                      <select
+                        value={draft.value}
+                        onChange={(event) => updateFilter(draft.id, { value: event.target.value })}
+                        className={`flex-1 rounded-md border p-1.5 font-inter text-sm outline-none focus:border-sky-400 ${field}`}
+                      >
+                        <option value="">Select suburb</option>
+                        {syntheticSuburbs.map((suburb) => (
+                          <option key={suburb} value={suburb}>
+                            {suburb}
+                          </option>
+                        ))}
+                      </select>
                     )}
 
                     <button type="button" onClick={() => removeFilter(draft.id)} className="font-inter text-xs text-rose-400 hover:text-rose-300">Remove</button>
