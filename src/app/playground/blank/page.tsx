@@ -71,7 +71,12 @@ function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
   const request = useMemo<AnalysisRequest>(() => {
     const selectedMetrics = allMetrics.filter((metric) => metrics[metric]);
     const built: AnalysisRequest = { metrics: selectedMetrics };
-    if (periodEnabled && startDate && endDate) built.period = { dateRange: [new Date(startDate), new Date(endDate)] };
+    if (periodEnabled && startDate && endDate) {
+      built.period = {
+        dateRange: [startDate, endDate],
+        interval: "day",
+      };
+    }
     const filters = filterDrafts.map(toFilter).filter((filter): filter is Filter => filter !== null);
     if (filters.length > 0) built.filters = filters;
     return built;

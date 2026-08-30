@@ -1,14 +1,12 @@
 import { Period } from "../../types/analysisMachine";
 import type { OrderForAnalysis } from "../../repositories/aiSlice/getOrdersForAnalysis_DB_op";
+import { toBusinessDate } from "../timeSeries/businessDates";
 
 export function filterByDate( orders: OrderForAnalysis[], period: Period): OrderForAnalysis[] {
-
-    // dateRange may arrive as strings (e.g. from a form or JSON body) rather than real Date objects
-    const startDate = new Date(period.dateRange[0]);
-    const endDate = new Date(period.dateRange[1]);
+    const [startDate, endDate] = period.dateRange;
 
     const filteredOrders = orders.filter((order) => {
-        const orderDate = new Date(order.created_at);
+        const orderDate = toBusinessDate(new Date(order.created_at));
 
         return orderDate >= startDate && orderDate <= endDate;
     });

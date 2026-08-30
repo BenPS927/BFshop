@@ -5,7 +5,8 @@ import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMerchantTheme } from "../useMerchantTheme";
-import type { AnalysisRequest, Filter, Metric } from "@/app/types/analysisMachine";
+import type { AnalysisRequest, AnalysisResult, Filter, Metric } from "@/app/types/analysisMachine";
+import { RevenueCharts } from "@/components/merchant/data/RevenueCharts";
 
 const allMetrics: Metric[] = ["revenue", "sales", "customers", "orders", "itemsSold"];
 
@@ -46,7 +47,7 @@ export default function MerchantDataPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [filterDrafts, setFilterDrafts] = useState<FilterDraft[]>([]);
-  const [output, setOutput] = useState<unknown>(null);
+  const [output, setOutput] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -55,7 +56,7 @@ export default function MerchantDataPage() {
     const built: AnalysisRequest = { metrics: selectedMetrics };
 
     if (periodEnabled && startDate && endDate) {
-      built.period = { dateRange: [new Date(startDate), new Date(endDate)] };
+      built.period = { dateRange: [startDate, endDate], interval: "day" };
     }
 
     const filters = filterDrafts.map(toFilter).filter((filter): filter is Filter => filter !== null);
@@ -208,6 +209,9 @@ export default function MerchantDataPage() {
             <pre className={`min-h-64 overflow-auto rounded-md border p-4 font-mono text-sm leading-relaxed ${field}`}>{error ? <span className="text-rose-400">{error}</span> : output === null ? <span className={muted}>Run a request to see its output.</span> : JSON.stringify(output, null, 2)}</pre>
           </section>
         </div>
+        {output?.revenue?.series && (
+          <RevenueCharts lightMode={lightMode} revenue={output.revenue} />
+        )}
       </section>
     </main>
   );

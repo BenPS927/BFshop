@@ -1,10 +1,10 @@
-import { analysisMachine } from "@/app/service/metricsAndHistory/analysisMachine";
+import { requestRouter } from "@/app/(merchant)/router/requestRouter";
 import type { AnalysisRequest } from "@/app/types/analysisMachine";
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as AnalysisRequest;
-    const result = await analysisMachine(body);
+    const result = await requestRouter(body);
 
     return Response.json(result, { status: 200 });
   } catch (error) {

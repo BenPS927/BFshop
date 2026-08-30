@@ -74,3 +74,16 @@ model OrderItem {
 
   @@map("orderitem")
 }
+
+model DailyMetricHistory {
+  id                 Int      @id @default(autoincrement())
+  businessDate       DateTime @unique @db.Date
+  revenue            Decimal  @db.Decimal(12, 2)
+  customers          Int?
+  orders             Int
+  itemsSold          Int
+  calculatedAt       DateTime @default(now())
+  calculationVersion Int      @default(1)
+
+  @@map("daily_metric_history")
+}

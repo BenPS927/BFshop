@@ -19,3 +19,16 @@ export function totalSales(orders: Orders[]) {
 
     return sales 
 }
+
+export function totalItemsSold(orders: Orders[]) {
+
+    const itemsSold = orders.reduce((orderTotal, order) => {
+        const itemsInOrder = order.orderItems.reduce((itemTotal, orderItem) => {
+            return itemTotal + orderItem.quantity
+        }, 0)
+
+        return orderTotal + itemsInOrder
+    }, 0)
+
+    return itemsSold
+}

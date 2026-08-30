@@ -4,6 +4,32 @@ export type AnalysisRequest = {
     filters?: Filter[];
 };
 
+export type AnalysisResult = {
+    revenue?: RevenueResult;
+    sales?: number;
+    itemsSold?: ItemsSoldResult;
+};
+
+export type RevenueResult = {
+    total: number;
+    series?: RevenueSeries;
+};
+
+export type ItemsSoldResult = {
+    total: number;
+    series?: RevenueSeries;
+};
+
+export type RevenueSeries = {
+    interval: "day";
+    periods: RevenuePeriod[];
+};
+
+export type RevenuePeriod = {
+    date: string;
+    value: number;
+};
+
 export type Metric =
     | "revenue"
     | "sales"
@@ -26,7 +52,8 @@ export type Filter =
       };
 
 export type Period = {
-    dateRange: [Date, Date];
+    dateRange: [string, string];
+    interval: "day";
 }
 
 export type Orders = {
