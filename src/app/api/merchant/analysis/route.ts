@@ -1,5 +1,5 @@
 import { requestRouter } from "@/app/(merchant)/router/requestRouter";
-import type { AnalysisRequest } from "@/app/types/analysisMachine";
+import type { AnalysisRequest } from "@/app/types/slice3MetricsAndHistory/analysisRequest";
 
 export async function POST(request: Request) {
   try {

@@ -88,6 +88,81 @@ WrittenOrderItems { id: number; order_id: number; product_id: number; product_na
     );
   }
 
+  if (slice === "slice-3") {
+    return (
+      <>
+        <h2 className="font-inter text-2xl font-semibold leading-snug text-zinc-950 md:text-3xl lg:text-4xl">Summary and structure</h2>
+        <p>Slice 3 establishes the machinery for requesting, calculating and presenting BFshop&apos;s foundational business metrics.</p>
+        <p>Its central architectural elements are the Analysis Request, the Analysis Machine, metric history, and the Results Contract.</p>
+        <p>Although chart controls and query interfaces belong conceptually to Slice 5, limited versions are developed here so Slice 3&apos;s analytical machinery can be tested.</p>
+        <p>Slice 3 is currently under construction and in its current form it contains two pieces of code for retrieving data from the databases, a frontend interface for sending queries to those pieces of code.</p>
+        <p>The next stages are to establish data shapes that will allow for a repeatable structure for data representation.</p>
+
+        <h2 className="pt-6 font-inter text-2xl font-semibold leading-snug text-zinc-950 md:text-3xl lg:text-4xl">Evolution</h2>
+        <p>The first thing to establish was &apos;what is this slice actually trying to achieve?&apos;</p>
+        <p>The first goal was to have basic business metrics calculated so they can be presented as graphs. See section 1 to read further detail on this.</p>
+        <p>The second goal was to be able to test variable queries, such as &apos;how much revenue came from males between x and y dates?&apos;.</p>
+        <p>The first goal could be achieved by having ready to go charts where each is rendered by calls to an API and shows its particular set of data.</p>
+        <p>The second goal is more complex because it introduces variety of queries.</p>
+        <p>I needed a way of testing queries, so a visual interface was needed, forcing this slice into territory of Slice 5: Intelligence Interface.</p>
+        <p>It made sense that this visual interface (VI from hereon) would serve in place of the eventual merchant interface in /merchant/data, and also in the project portal, so site visitors are immediately presented with the current stage of the project. Two copies of the same interface with the same inputs and using the same datasets.</p>
+        <p>So, as both goals required querying a dataset, differing only in the variability of the queries, and the VI was to represent the progress in the analysis process and the progress towards a final user interface, it became clear that this slice would rely upon a structure, or a process, by which the data can be queried, and filtered on its properties.</p>
+        <p>This sounds obvious, and it is, but what I refer to is a scaffold on which the project will rest, a set of boundaries on whose sides different services and functions will reside, interacting to allow for variety in input and output.</p>
+        <p>This approach allows for simplicity to start with room for added depth later (a concept on which BFshop has so far been built).</p>
+
+        <h3 className="pt-6 font-inter text-xl font-semibold leading-snug text-zinc-950 md:text-2xl lg:text-3xl">Development</h3>
+
+        <h4 className="pt-4 font-inter text-lg font-medium leading-snug text-zinc-950 md:text-xl lg:text-2xl">Data Foundations and Analysis Machine</h4>
+        <p>The first thing was to define the data foundations and how these would be dissected for different views on the data. (I failed to conceive of the later-realised and highly important Analysis Request and Results Contract.)</p>
+        <p>Three &apos;layers&apos; of information were roughly defined:</p>
+        <p><strong>Totals:</strong> Direct measurements of business activity, such as revenue, orders, items sold and customers*</p>
+        <p><strong>Derivations:</strong> New information calculated from one or more totals, such as average order value, revenue per customer, percentage change and rolling averages</p>
+        <p><strong>Filters:</strong> Conditions used to limit which records contribute to totals and derivations, such as period, gender, age, location, product or category</p>
+        <p>*customers are currently deferred for simplicity</p>
+        <p>Totals would be orders, customers, items sold, and revenue. These could then be filtered by time, person (gender, location, age) and product (product id, category).</p>
+        <p>A great deal of debate was had on a number of questions:</p>
+        <ul className="list-disc space-y-2 pl-6">
+          <li>How should various elements be both separate and collaborative with one another?</li>
+          <li>How should meaningful patterns and relationships be identified without mistaking randomness for something important (slice 4 territory)?</li>
+          <li>What should be calculated on demand vs prior to being asked?</li>
+          <li>What should be stored historically and at what level of detail?</li>
+          <li>How can deterministic tools be used to minimize the scope of AI?</li>
+        </ul>
+        <p>It was soon realized that an architecture involving a central piece of machinery would be needed to draw together the totals and the filtering devices.</p>
+        <p>From this the analysis machine (AM) was built.</p>
+        <p>Then I realized that with such a machine, the output would be determined by the input, rather than the initial idea of applying filters to predefined totals.</p>
+        <p>So the analysis machine is effectively a service, similar to placeOrderService.</p>
+        <p>The AM would extract all orders, along with the related customer and order items, from the database (not a long term ideal solution but acceptable for a learning project), and filter by whichever arguments were passed into the AM representing filters.</p>
+        <p>It was soon realized that filtering by time, or period as it will be now referred to, is too fundamental to have period included in filters; the reasoning being that without a time dimension (in the absence of different data entities or sources such as in the case of comparisons) a historical metric is reduced to a single total rather than a series showing change. And so historical charts, such as would form the basis of most charts in an analytics workspace, would always need to be filtered by period.</p>
+        <p>As a result of this the data entity going into the AM was properly defined:</p>
+        <img src="/assets/slice3-analysis-request.png" alt="Analysis Request hierarchy showing metrics, period, and filters with their values." className="my-8 w-full rounded-md border border-zinc-200 object-contain" />
+        <p>Period is on the same level within Analysis Request as metric and filters, reflecting its importance. This object is absolutely fundamental to slice 3 and gives us an object around which we can build the rest of the machinery.</p>
+        <p>(I now recognize that the period object needs to be reshaped and so this shape is not final).</p>
+        <p>A charting package was installed and the VI was built as means for testing the AM. This was the first step in creating an instance of a VI, or at the least a way of testing the AM</p>
+
+        <h4 className="pt-4 font-inter text-lg font-medium leading-snug text-zinc-950 md:text-xl lg:text-2xl">Metric History</h4>
+        <p>The idea of persisted data was always in the periphery; it made sense to save some form of the AM&apos;s output.</p>
+        <p>This idea was realized as the solution to the limitation of the VI; it could only produce one data point per query; filtering revenue by date added the revenue of each day in that period and returned it as one number. A solid first step but not much use for eCommerce merchants.</p>
+        <p>Persisted data was the answer.</p>
+        <p>And the AM provided the perfect way to create that.</p>
+        <p>It was decided that the Metric History Machine (MHM) was to be a similar device to the AM, but focused on &apos;simpler&apos; and historical data, drawing from a (at this point imaginary) database where each row would represent a day and each column a total (revenue, orders, etc) for that day.</p>
+        <p>The MHM would retrieve individual values for specific days, providing historical data.</p>
+        <p>This was done as a new machine rather than an extension of the AM for separation of concerns.</p>
+        <p>For this to fit in three main things were needed:</p>
+        <ol className="list-decimal space-y-2 pl-6">
+          <li>The actual persisted data</li>
+          <li>Some mechanism for queries to reach either the AM or the MHM</li>
+          <li>A shared data shape</li>
+        </ol>
+        <ol className="list-decimal space-y-4 pl-6">
+          <li>This one was simple; an n8n automation runs daily and sends a date to an API endpoint. A snapshot service constructs a request for the AM, running it for revenue, orders and items sold. The results are written to the Metric History Database (MHDB). All that is needed is time (supposing it all works).</li>
+          <li>A &apos;request router&apos; function was built between the AM and API, where the request (more on the request later) is assessed; if the request contains only metric and period (such as orders placed in July) then it goes to the MHM. If it also contains a filter it goes to the AM.</li>
+          <li>This led me to the realization on how fundamental data is to the project, and how the shape of the data coming down in the query and the data being sent back up in response, should have been determined among the very first things when building this slice. The next section will focus on these.</li>
+        </ol>
+      </>
+    );
+  }
+
   return <p>Start writing this slice document here.</p>;
 }
 
@@ -109,7 +184,7 @@ export default function VerticalSliceDocumentPage() {
         </div>
 
         <article className="mx-auto mt-10 max-w-4xl bg-white px-8 py-12 text-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.22)] md:mt-16 md:min-h-[900px] md:px-16 md:py-20 lg:px-24">
-          <h1 className="font-bebas text-4xl leading-tight tracking-[0.08em] md:text-5xl">{slice === "slice-1" ? "Slice 1: Place Order" : slice === "slice-2" ? "Slice 2: Manage Orders" : "Vertical slice document"}</h1>
+          <h1 className="font-bebas text-4xl leading-tight tracking-[0.08em] md:text-5xl">{slice === "slice-1" ? "Slice 1: Place Order" : slice === "slice-2" ? "Slice 2: Manage Orders" : slice === "slice-3" ? "Slice 3: Metrics and History" : "Vertical slice document"}</h1>
           <div className="mt-8 border-t border-zinc-200 pt-8 font-inter text-base leading-relaxed md:mt-10 md:pt-10" aria-label="Vertical slice document">
             <div className={documentClass}>
               <SliceContent slice={slice} />

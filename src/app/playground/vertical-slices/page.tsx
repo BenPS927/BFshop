@@ -9,7 +9,7 @@ import { useMerchantTheme } from "../../(merchant)/merchant/useMerchantTheme";
 const slices = [
   { title: "Slice 1: Place Order", description: "The customer end of BFshop, where an order can be placed.", href: "/playground/vertical-slices/slice-1" },
   { title: "Slice 2: Manage Orders", description: "The merchant end of BFshop, where orders can be viewed and managed.", href: "/playground/vertical-slices/slice-2" },
-  { title: "Slice 3: Metrics and History", description: "The calculation and storage of business metrics.", href: "/playground/vertical-slices/slice-3" },
+  { title: "Slice 3: Metrics and History", description: "The calculation and storage of business metrics.", href: "/playground/vertical-slices/slice-3", status: "In progress" },
   { title: "Slice 4: Findings and Relationships", description: "Deterministic analysis of noteworthy changes, patterns, and relationships.", href: "/playground/vertical-slices/slice-4" },
   { title: "Slice 5: Intelligence Interface", description: "An AI interface for explaining findings, answering questions, and suggesting actions.", href: "/playground/vertical-slices/slice-5" },
 ];
@@ -43,6 +43,8 @@ export default function VerticalSlicesPage() {
               <div>
                 <h1 className={`font-inter text-xl font-semibold leading-snug ${lightMode ? "text-zinc-950" : "text-white"}`}>{slice.title}</h1>
                 <p className={`mt-4 font-inter text-sm leading-relaxed ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>{slice.description}</p>
+                <br />
+                {slice.status && <span className={`mb-4 inline-flex rounded-full border px-3 py-1 font-inter text-xs font-medium md:text-sm ${lightMode ? "border-sky-200 bg-sky-50 text-sky-700" : "border-sky-400/40 bg-sky-400/10 text-sky-300"}`}>{slice.status}</span>}
               </div>
             </Link>
           ))}

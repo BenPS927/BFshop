@@ -5,7 +5,7 @@ export async function createDailyMetricSnapshot(
   businessDate: string
 ): Promise<void> {
   const analysisResult = await analysisMachine({
-    metrics: ["revenue", "sales", "itemsSold"],
+    metrics: ["revenue", "orders", "itemsSold"],
     period: {
       dateRange: [businessDate, businessDate],
       interval: "day",
@@ -16,7 +16,7 @@ export async function createDailyMetricSnapshot(
     throw new Error("Daily revenue was not calculated");
   }
 
-  if (analysisResult.sales === undefined) {
+  if (!analysisResult.orders) {
     throw new Error("Daily orders were not calculated");
   }
 
@@ -28,7 +28,7 @@ export async function createDailyMetricSnapshot(
     businessDate,
     revenue: analysisResult.revenue.total,
     customers: null,
-    orders: analysisResult.sales,
+    orders: analysisResult.orders.total,
     itemsSold: analysisResult.itemsSold.total,
   });
 }

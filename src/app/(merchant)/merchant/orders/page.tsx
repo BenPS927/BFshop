@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LayoutGroup, motion } from "framer-motion";
 import type { CreatedOrder } from "@/app/types/orders";
+import { ContextGuide } from "@/components/shared/ContextGuide";
+import { WorkspaceReveal } from "@/components/shared/WorkspaceReveal";
 import { useMerchantTheme } from "../useMerchantTheme";
 
 type ReceivedOrder = Omit<CreatedOrder, "created_at"> & {
@@ -63,7 +65,7 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
 }
 
 export default function MerchantOrdersPage() {
-  const { lightMode, toggleTheme } = useMerchantTheme();
+  const { lightMode, themeReady, toggleTheme } = useMerchantTheme();
   const [receivedOrders, setReceivedOrders] = useState<ReceivedOrder[]>([]);
   const [sentOrders, setSentOrders] = useState<ReceivedOrder[]>([]);
   const [deliveredOrders, setDeliveredOrders] = useState<ReceivedOrder[]>([]);
@@ -485,7 +487,7 @@ export default function MerchantOrdersPage() {
 
   return (
     <main
-      className={`min-h-screen px-4 py-6 transition-colors md:px-6 md:py-8 lg:px-8 lg:py-12 ${
+      className={`min-h-screen px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-12 ${themeReady ? "opacity-100" : "opacity-0"} ${
         lightMode
           ? "bg-[radial-gradient(1000px_500px_at_15%_-10%,rgba(14,165,233,0.12),transparent_60%),linear-gradient(180deg,#F8FAFC_0%,#EAF1F7_100%)] text-zinc-950"
           : "bg-[radial-gradient(1200px_500px_at_15%_-10%,rgba(255,255,255,0.06),transparent_60%),linear-gradient(180deg,#050505_0%,#0A0A0A_45%,#121212_100%)] text-white"
@@ -509,43 +511,38 @@ export default function MerchantOrdersPage() {
               lightMode ? "border-sky-700" : "border-sky-400"
             }`}
           >
-            Order Hub
+            Order <span className={lightMode ? "text-sky-700" : "text-sky-400"}>Hub</span>
           </h1>
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            title={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            className={`justify-self-end grid size-11 shrink-0 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
-              lightMode
-                ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700"
-                : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"
-            }`}
-          >
-            {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
-          </button>
+          <div className="flex items-center gap-2 justify-self-end">
+            <ContextGuide guideId="order-hub" message="This is where orders placed in the merchant end, or generated regularly by the synthetic economy, go to." lightMode={lightMode} />
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
+              title={`Switch to ${lightMode ? "dark" : "light"} mode`}
+              className={`grid size-11 shrink-0 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
+                lightMode
+                  ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700"
+                  : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"
+              }`}
+            >
+              {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
+            </button>
+          </div>
         </header>
 
-        <LayoutGroup>
-          <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:-mr-6 md:gap-6 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
-            {boards.map((board, boardIndex) => (
-              <motion.div
-                key={board.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{
-                  duration: 0.45,
-                  delay: boardIndex * 0.08,
-                  ease: "easeOut",
-                }}
-                className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto"
-              >
-                <BoardPanel board={board} lightMode={lightMode} />
-              </motion.div>
-            ))}
-          </div>
-        </LayoutGroup>
+        <WorkspaceReveal>
+          <LayoutGroup>
+            <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:-mr-6 md:gap-6 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
+              {boards.map((board) => (
+                <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
+                  <BoardPanel board={board} lightMode={lightMode} />
+                </div>
+              ))}
+            </div>
+          </LayoutGroup>
+        </WorkspaceReveal>
       </section>
     </main>
   );

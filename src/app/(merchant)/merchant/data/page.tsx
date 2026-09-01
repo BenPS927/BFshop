@@ -5,12 +5,17 @@ import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMerchantTheme } from "../useMerchantTheme";
-import type { AnalysisRequest, AnalysisResult, Filter, Metric } from "@/app/types/analysisMachine";
+import type { AnalysisRequest, Filter, Metric } from "@/app/types/slice3MetricsAndHistory/analysisRequest";
+import type { ResultsContract } from "@/app/types/slice3MetricsAndHistory/resultsContract";
 import { RevenueCharts } from "@/components/merchant/data/RevenueCharts";
+import { ContextGuide } from "@/components/shared/ContextGuide";
+import { WorkspaceReveal } from "@/components/shared/WorkspaceReveal";
 import { syntheticSuburbs } from "@/data/syntheticEconomy/locations";
 
-const allMetrics = ["revenue", "sales", "itemsSold"] as const satisfies readonly Metric[];
+const allMetrics = ["revenue", "orders", "itemsSold"] as const satisfies readonly Metric[];
 type AvailableMetric = (typeof allMetrics)[number];
+
+const intelligenceInterfaceSubtitle = "This is the current state of the Intelligence interface. Right now it is can filter metrics by gender, age and location. Keep checking back here to watch it evolve.";
 
 type FilterDraft =
   | { id: string; category: "gender"; value: string }
@@ -37,17 +42,17 @@ function toFilter(draft: FilterDraft): Filter | null {
 }
 
 export default function MerchantDataPage() {
-  const { lightMode, toggleTheme } = useMerchantTheme();
+  const { lightMode, themeReady, toggleTheme } = useMerchantTheme();
   const [metrics, setMetrics] = useState<Record<AvailableMetric, boolean>>({
     revenue: true,
-    sales: false,
+    orders: false,
     itemsSold: false,
   });
   const [periodEnabled, setPeriodEnabled] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [filterDrafts, setFilterDrafts] = useState<FilterDraft[]>([]);
-  const [output, setOutput] = useState<AnalysisResult | null>(null);
+  const [output, setOutput] = useState<ResultsContract | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -116,18 +121,29 @@ export default function MerchantDataPage() {
   const chip = lightMode ? "border-zinc-300 bg-zinc-50 text-zinc-800" : "border-white/15 bg-black/20 text-zinc-200";
 
   return (
-    <main className={`min-h-screen px-4 py-6 transition-colors md:px-6 md:py-8 lg:px-8 lg:py-12 ${lightMode ? "bg-[radial-gradient(1000px_500px_at_15%_-10%,rgba(14,165,233,0.12),transparent_60%),linear-gradient(180deg,#F8FAFC_0%,#EAF1F7_100%)] text-zinc-950" : "bg-[radial-gradient(1200px_500px_at_15%_-10%,rgba(255,255,255,0.06),transparent_60%),linear-gradient(180deg,#050505_0%,#0A0A0A_45%,#121212_100%)] text-white"}`}>
+    <main className={`min-h-screen px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-12 ${themeReady ? "opacity-100" : "opacity-0"} ${lightMode ? "bg-[radial-gradient(1000px_500px_at_15%_-10%,rgba(14,165,233,0.12),transparent_60%),linear-gradient(180deg,#F8FAFC_0%,#EAF1F7_100%)] text-zinc-950" : "bg-[radial-gradient(1200px_500px_at_15%_-10%,rgba(255,255,255,0.06),transparent_60%),linear-gradient(180deg,#050505_0%,#0A0A0A_45%,#121212_100%)] text-white"}`}>
       <section className="mx-auto max-w-6xl">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
-          <div className="pt-2"><Link href="/merchant" className="font-inter text-xs font-semibold uppercase tracking-[0.14em] text-sky-400 hover:text-sky-300">BFshop / Merchant</Link></div>
-          <h1 className={`border-b p-2 text-center font-bebas text-4xl leading-tight tracking-[0.12em] md:text-5xl lg:p-8 lg:text-6xl ${lightMode ? "border-sky-700" : "border-sky-400"}`}>Data</h1>
-          <button type="button" onClick={toggleTheme} aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`} title={`Switch to ${lightMode ? "dark" : "light"} mode`} className={`grid size-11 justify-self-end place-items-center rounded-md border ${lightMode ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700" : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"}`}>
-            {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
-          </button>
+        <header className="grid grid-cols-[1fr_auto] items-start gap-4 md:grid-cols-[1fr_auto_1fr]">
+          <div className="order-2 pt-2 md:order-none"><Link href="/merchant" className="font-inter text-xs font-semibold uppercase tracking-[0.14em] text-sky-400 hover:text-sky-300">BFshop / Merchant</Link></div>
+          <div className="order-1 col-span-2 text-center md:order-none md:col-span-1">
+            <h1 className={`border-b p-2 font-bebas text-4xl leading-tight tracking-[0.12em] md:text-5xl lg:p-8 lg:text-6xl ${lightMode ? "border-sky-700" : "border-sky-400"}`}>
+              Intelligence <span className={lightMode ? "text-sky-700" : "text-sky-400"}>Interface</span>
+            </h1>
+            <p className={`mx-auto mt-3 max-w-2xl font-inter text-sm leading-relaxed md:text-base ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>
+              {intelligenceInterfaceSubtitle}
+            </p>
+          </div>
+          <div className="order-3 flex items-center gap-2 justify-self-end md:order-none">
+            <ContextGuide guideId="intelligence-interface"  message="This page will eventually be an interactive analytics workspace and reflects the current stage in its development. " lightMode={lightMode} />
+            <button type="button" onClick={toggleTheme} aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`} title={`Switch to ${lightMode ? "dark" : "light"} mode`} className={`grid size-11 place-items-center rounded-md border ${lightMode ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700" : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"}`}>
+              {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
+            </button>
+          </div>
         </header>
+        <WorkspaceReveal>
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <section className={`rounded-lg border p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-6 ${panel}`}>
-            <div className="mb-5"><p className="font-inter text-xs font-semibold uppercase tracking-[0.14em] text-sky-400">Analysis machine</p><h2 className="mt-2 font-inter text-2xl font-semibold">Build a request</h2><p className={`mt-2 font-inter text-sm leading-relaxed ${muted}`}>Toggle metrics, a date range, and filters. The request JSON is built for you.</p></div>
+            <div className="mb-5"><h2 className="font-inter text-2xl font-semibold">Build a request</h2><p className={`mt-2 font-inter text-sm leading-relaxed ${muted}`}>Toggle metrics, a date range, and filters. The request JSON is built for you.</p></div>
 
             <div className="mb-5">
               <p className={`mb-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] ${muted}`}>Metrics</p>
@@ -146,8 +162,8 @@ export default function MerchantDataPage() {
             </div>
 
             <div className="mb-5">
-              <label className={`flex cursor-not-allowed items-center gap-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] opacity-40 ${muted}`}>
-                <input type="checkbox" checked={periodEnabled} onChange={(event) => setPeriodEnabled(event.target.checked)} disabled />
+              <label className={`flex cursor-pointer items-center gap-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] ${muted}`}>
+                <input type="checkbox" checked={periodEnabled} onChange={(event) => setPeriodEnabled(event.target.checked)} />
                 Date range
               </label>
               {periodEnabled && (
@@ -216,13 +232,14 @@ export default function MerchantDataPage() {
             <button type="button" onClick={runAnalysis} disabled={isRunning} className="rounded-md bg-sky-500 px-4 py-3 font-inter text-sm font-semibold text-zinc-950 transition hover:bg-sky-300 disabled:cursor-wait disabled:opacity-60">{isRunning ? "Running..." : "Run analysis"}</button>
           </section>
           <section className={`rounded-lg border p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-6 ${panel}`}>
-            <div className="mb-5"><p className="font-inter text-xs font-semibold uppercase tracking-[0.14em] text-sky-400">Machine output</p><h2 className="mt-2 font-inter text-2xl font-semibold">Result</h2></div>
+            <div className="mb-5"><h2 className="font-inter text-2xl font-semibold">Result</h2></div>
             <pre className={`min-h-64 overflow-auto rounded-md border p-4 font-mono text-sm leading-relaxed ${field}`}>{error ? <span className="text-rose-400">{error}</span> : output === null ? <span className={muted}>Run a request to see its output.</span> : JSON.stringify(output, null, 2)}</pre>
           </section>
         </div>
         {output?.revenue?.series && (
           <RevenueCharts lightMode={lightMode} revenue={output.revenue} />
         )}
+        </WorkspaceReveal>
       </section>
     </main>
   );

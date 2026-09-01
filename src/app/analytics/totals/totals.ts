@@ -1,4 +1,4 @@
-import { Orders } from "../../types/analysisMachine"
+import { Orders } from "../../types/slice3MetricsAndHistory/analysisData"
 
 
 export function totalRevenue(orders: Orders[]) {

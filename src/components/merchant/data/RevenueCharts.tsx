@@ -2,11 +2,11 @@
 
 import { BarChart } from "@mui/x-charts/BarChart";
 import { LineChart } from "@mui/x-charts/LineChart";
-import type { RevenueResult } from "@/app/types/analysisMachine";
+import type { MetricResult } from "@/app/types/slice3MetricsAndHistory/resultsContract";
 
 type RevenueChartsProps = {
   lightMode: boolean;
-  revenue: RevenueResult;
+  revenue: MetricResult;
 };
 
 const currencyFormatter = new Intl.NumberFormat("en-AU", {
@@ -30,7 +30,11 @@ export function RevenueCharts({ lightMode, revenue }: RevenueChartsProps) {
     return null;
   }
 
-  const dates = revenue.series.periods.map((period) => formatDate(period.date));
+  const dates = revenue.series.periods.map((period) =>
+    period.startDate === period.endDate
+      ? formatDate(period.startDate)
+      : `${formatDate(period.startDate)}–${formatDate(period.endDate)}`
+  );
   const dailyRevenue = revenue.series.periods.map((period) => period.value);
 
   let runningTotal = 0;

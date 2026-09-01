@@ -53,7 +53,22 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+              try {
+                const savedTheme = window.localStorage.getItem("bfshop-merchant-theme");
+                const theme = savedTheme === "light" ? "light" : "dark";
+                document.documentElement.dataset.bfshopTheme = theme;
+              } catch {
+                document.documentElement.dataset.bfshopTheme = "dark";
+              }
+            })();`,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${bebas.variable} antialiased`}
       >

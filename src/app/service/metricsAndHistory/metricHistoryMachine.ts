@@ -1,13 +1,11 @@
 import { getMetricHistory_DB_op } from "../../repositories/aiSlice/getMetricHistory_DB_op"
-import type { AnalysisRequest } from "@/app/types/analysisMachine";
+import type { AnalysisRequest, PersistedMetric } from "@/app/types/slice3MetricsAndHistory/analysisRequest";
 import type {
-  MetricHistoryResult,
-  PersistedMetric,
-} from "@/app/types/metricHistory";
+  ResultsContract,
+} from "@/app/types/slice3MetricsAndHistory/resultsContract";
 
 const persistedMetrics: PersistedMetric[] = [
   "revenue",
-  "customers",
   "orders",
   "itemsSold",
 ];
@@ -26,7 +24,7 @@ function formatBusinessDate(date: Date | string): string {
 
 export async function metricHistoryMachine(
   request: AnalysisRequest
-): Promise<MetricHistoryResult> {
+): Promise<ResultsContract> {
   if (request.metrics.length !== 1) {
     throw new Error("Metric history requests currently require exactly one metric");
   }
@@ -43,12 +41,13 @@ export async function metricHistoryMachine(
 
   const history = await getMetricHistory_DB_op(request.period);
   const periods = history.map((row) => ({
-    date: formatBusinessDate(row.businessDate),
+    startDate: formatBusinessDate(row.startDate),
+    endDate: formatBusinessDate(row.endDate),
     value: Number(row[metric]),
   }));
   const total = periods.reduce((sum, period) => sum + period.value, 0);
 
-  const result: MetricHistoryResult = {};
+  const result: ResultsContract = {};
   result[metric] = {
     total,
     series: {

@@ -4,9 +4,10 @@ import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ContextGuide } from "@/components/shared/ContextGuide";
 import { useMerchantTheme } from "../../(merchant)/merchant/useMerchantTheme";
-import type { AnalysisRequest, Filter, Metric } from "../../types/analysisMachine";
+import type { AnalysisRequest, Filter, Metric } from "../../types/slice3MetricsAndHistory/analysisRequest";
 import { syntheticSuburbs } from "@/data/syntheticEconomy/locations";
 
 const portalAreas = [
@@ -29,8 +30,68 @@ const portalAreas = [
   },
 ] as const;
 
-const allMetrics = ["revenue", "sales", "itemsSold"] as const satisfies readonly Metric[];
+const allMetrics = ["revenue", "orders", "itemsSold"] as const satisfies readonly Metric[];
 type AvailableMetric = (typeof allMetrics)[number];
+
+function OneTimeReveal({
+  children,
+  trigger,
+  delay = 0,
+  className = "",
+}: {
+  children: ReactNode;
+  trigger: "load" | "scroll";
+  delay?: number;
+  className?: string;
+}) {
+  const [visible, setVisible] = useState(false);
+  const elementRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reducedMotion) {
+      setVisible(true);
+      return;
+    }
+
+    if (trigger === "load") {
+      let timeout: number | undefined;
+      const frame = window.requestAnimationFrame(() => {
+        timeout = window.setTimeout(() => setVisible(true), delay);
+      });
+      return () => {
+        window.cancelAnimationFrame(frame);
+        if (timeout !== undefined) window.clearTimeout(timeout);
+      };
+    }
+
+    const element = elementRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.12 },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [delay, trigger]);
+
+  return (
+    <div
+      ref={elementRef}
+      className={`${className} transition-[opacity,transform] motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none ${trigger === "load" ? "duration-700 ease-in-out" : "duration-500 ease-in-out"} ${visible ? "translate-y-0 opacity-100" : trigger === "load" ? "translate-y-4 opacity-0" : "translate-y-2 opacity-0"}`}
+    >
+      {children}
+    </div>
+  );
+}
 
 type FilterDraft =
   | { id: string; category: "gender"; value: string }
@@ -57,7 +118,7 @@ function toFilter(draft: FilterDraft): Filter | null {
 function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
   const [metrics, setMetrics] = useState<Record<AvailableMetric, boolean>>({
     revenue: true,
-    sales: false,
+    orders: false,
     itemsSold: false,
   });
   const [periodEnabled, setPeriodEnabled] = useState(false);
@@ -118,7 +179,7 @@ function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
   return (
     <article className={`min-h-[520px] rounded-lg border p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-6 lg:grid lg:grid-cols-2 lg:gap-8 ${panel}`}>
       <header className="mb-8 text-center lg:col-span-2 lg:mb-0">
-        <h2 className="font-inter text-2xl font-semibold leading-snug md:text-3xl">Analysis Machine </h2>
+        <h2 className="font-inter text-2xl font-semibold leading-snug md:text-3xl">Intelligence Interface </h2>
         <p className={`mt-2 font-inter text-sm leading-relaxed ${muted}`}>Construct a request by selecting a metric and adding filters. the right box will show you the output directly from the database.</p>
       </header>
       <section className="flex min-w-0 flex-col">
@@ -137,8 +198,8 @@ function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
       </div>
 
       <div className="mb-5">
-        <label className={`flex cursor-not-allowed items-center gap-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] opacity-40 ${muted}`}>
-          <input type="checkbox" checked={periodEnabled} onChange={(event) => setPeriodEnabled(event.target.checked)} disabled />
+        <label className={`flex cursor-pointer items-center gap-2 font-inter text-xs font-semibold uppercase tracking-[0.1em] ${muted}`}>
+          <input type="checkbox" checked={periodEnabled} onChange={(event) => setPeriodEnabled(event.target.checked)} />
           Date range
         </label>
         {periodEnabled && (
@@ -206,10 +267,10 @@ function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
 }
 
 export default function BlankPlaygroundPage() {
-  const { lightMode, toggleTheme } = useMerchantTheme();
+  const { lightMode, themeReady, toggleTheme } = useMerchantTheme();
 
   return (
-    <main className={`min-h-screen px-4 py-6 transition-colors md:px-6 md:py-8 lg:px-8 lg:py-12 ${lightMode ? "bg-[radial-gradient(1000px_500px_at_15%_-10%,rgba(14,165,233,0.12),transparent_60%),linear-gradient(180deg,#F8FAFC_0%,#EAF1F7_100%)] text-zinc-950" : "bg-[radial-gradient(900px_520px_at_86%_4%,rgba(14,165,233,0.13),transparent_62%),radial-gradient(760px_460px_at_8%_42%,rgba(255,255,255,0.05),transparent_64%),linear-gradient(180deg,#050505_0%,#0a0a0a_52%,#121212_100%)] text-white"}`}>
+    <main className={`min-h-screen px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-12 ${themeReady ? "opacity-100" : "opacity-0"} ${lightMode ? "bg-[radial-gradient(1000px_500px_at_15%_-10%,rgba(14,165,233,0.12),transparent_60%),linear-gradient(180deg,#F8FAFC_0%,#EAF1F7_100%)] text-zinc-950" : "bg-[radial-gradient(900px_520px_at_86%_4%,rgba(14,165,233,0.13),transparent_62%),radial-gradient(760px_460px_at_8%_42%,rgba(255,255,255,0.05),transparent_64%),linear-gradient(180deg,#050505_0%,#0a0a0a_52%,#121212_100%)] text-white"}`}>
       <div className="mx-auto max-w-none">
         <div className="flex items-center justify-between">
           <a
@@ -219,20 +280,23 @@ export default function BlankPlaygroundPage() {
             <ArrowBackIcon fontSize="small" />
             Back
           </a>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            title={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            className={`grid size-11 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${lightMode ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700" : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"}`}
-          >
-            {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <ContextGuide guideId="project-portal" message="This is the project portal. Here you can use the current version of the intelligence interface to query the database, read up on the documentation, or navigate to the merchant or customer ends." lightMode={lightMode} />
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
+              title={`Switch to ${lightMode ? "dark" : "light"} mode`}
+              className={`grid size-11 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${lightMode ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700" : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"}`}
+            >
+              {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
+            </button>
+          </div>
         </div>
 
         <header className={`mx-auto max-w-6xl border-b pb-8 text-center md:pb-10 lg:pb-12 ${lightMode ? "border-zinc-300" : "border-white/15"}`}>
           <div>
-            <h1 className="font-bebas text-4xl leading-tight tracking-[0.08em] md:text-5xl lg:text-6xl">BFshop</h1>
+            <h1 className="font-bebas text-4xl leading-tight tracking-[0.08em] md:text-5xl lg:text-6xl">BF<span className={lightMode ? "text-sky-700" : "text-sky-400"}>shop</span></h1>
           </div>
           <div className={`mt-4 font-inter text-base leading-relaxed md:mt-6 md:text-lg ${lightMode ? "text-zinc-700" : "text-zinc-300"}`}>
             BFshop is an under-construction simulated ecommerce business used to develop an intelligence system that identifies what matters, explains it simply and suggests what to do next — without swamping the merchant with analytics dashboards.
@@ -243,18 +307,25 @@ export default function BlankPlaygroundPage() {
           </div>
         </header>
 
-        <div className={`mx-auto mt-8 max-w-6xl text-center font-inter text-sm leading-relaxed md:mt-10 md:text-base ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>
-          The first iteration of the analysis machine that will underlie the BFshop. You can filter what data to ask for and this comes directly from the database. This will eventually be an AI chat interface presenting insights on the simulated business, and offering suggestions. 
-        </div>
+        <OneTimeReveal trigger="load" delay={150}>
+          <div className={`mx-auto mt-8 max-w-6xl text-center font-inter text-sm leading-relaxed md:mt-10 md:text-base ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>
+            The first iteration of BFshop's intelligence interface. You can filter what data to ask for and this comes directly from the database. This is one step in th evolution towards an AI chat interface presenting insights on the simulated business, and offering suggestions.
+          </div>
+        </OneTimeReveal>
 
         <section className="mt-8 grid gap-20 md:mt-10 md:grid-cols-2 md:gap-24 lg:mt-16 lg:grid-cols-[296px_minmax(0,1fr)_296px] lg:items-stretch lg:gap-12" aria-label="BFshop project areas">
           {portalAreas.map((area) => (
-            area.title === "Analysis machine" ? (
-              <AnalysisMachinePanel key={area.title} lightMode={lightMode} />
+            <OneTimeReveal
+              key={area.title}
+              trigger="load"
+              delay={area.title === "Analysis machine" ? 300 : 750}
+              className={area.title === "Analysis machine" ? "h-full" : "h-full lg:mt-24 lg:h-[300px] lg:self-start"}
+            >
+            {area.title === "Analysis machine" ? (
+              <AnalysisMachinePanel lightMode={lightMode} />
             ) : area.title === "Project notes" ? (
               <div
-                key={area.title}
-                className={`grid min-h-52 gap-4 rounded-lg border p-4 lg:mt-24 lg:h-[300px] lg:min-h-0 lg:self-start ${lightMode ? "border-zinc-300 bg-white" : "border-white/15 bg-white/[0.06]"}`}
+                className={`grid h-full min-h-52 gap-4 rounded-lg border p-4 lg:min-h-0 ${lightMode ? "border-zinc-300 bg-white" : "border-white/15 bg-white/[0.06]"}`}
               >
                 <Link
                   href="/merchant"
@@ -273,9 +344,8 @@ export default function BlankPlaygroundPage() {
               </div>
             ) : (
               <Link
-                key={area.title}
                 href={area.href}
-                className={`group flex min-h-52 flex-col justify-between rounded-lg border p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition duration-200 ease-out hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400/80 md:p-8 lg:mt-24 lg:h-[300px] lg:min-h-0 lg:self-start ${lightMode ? "border-zinc-300 bg-white hover:border-sky-600/60 hover:bg-sky-50" : "border-white/15 bg-white/[0.06] hover:border-sky-400/60 hover:bg-white/[0.1] hover:shadow-[0_24px_56px_rgba(0,0,0,0.42)]"}`}
+                className={`group flex h-full min-h-52 flex-col justify-between rounded-lg border p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition duration-200 ease-out hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400/80 md:p-8 lg:min-h-0 ${lightMode ? "border-zinc-300 bg-white hover:border-sky-600/60 hover:bg-sky-50" : "border-white/15 bg-white/[0.06] hover:border-sky-400/60 hover:bg-white/[0.1] hover:shadow-[0_24px_56px_rgba(0,0,0,0.42)]"}`}
               >
                 <div>
                   <h2 className={`mt-6 font-inter text-xl font-semibold leading-snug md:text-2xl ${lightMode ? "text-zinc-950" : "text-white"}`}>
@@ -286,13 +356,15 @@ export default function BlankPlaygroundPage() {
                   </p>
                 </div>
               </Link>
-            )
+            )}
+            </OneTimeReveal>
           ))}
         </section>
       </div>
 
-      <section className={`-mx-4 mt-24 px-4 py-12 md:-mx-6 md:px-6 md:py-16 lg:-mx-8 lg:mt-32 lg:px-8 lg:py-20 ${lightMode ? "bg-white text-zinc-950" : "bg-white text-zinc-950"}`} aria-labelledby="documentation-title">
-        <div className="mx-auto max-w-7xl">
+      <OneTimeReveal trigger="scroll">
+        <section className={`-mx-4 mt-24 px-4 py-12 md:-mx-6 md:px-6 md:py-16 lg:-mx-8 lg:mt-32 lg:px-8 lg:py-20 ${lightMode ? "bg-white text-zinc-950" : "bg-white text-zinc-950"}`} aria-labelledby="documentation-title">
+          <div className="mx-auto max-w-7xl">
           <header className="mx-auto max-w-3xl text-center">
             <h1 id="documentation-title" className="font-bebas text-4xl leading-tight tracking-[0.08em] md:text-5xl lg:text-6xl">Architecture</h1>
             <p className="mt-4 font-inter text-base leading-relaxed text-zinc-600 md:mt-6 md:text-lg">BFshop is a simulated eCommerce business, with a customer interface for placing orders and a merchant interface for managing orders. The merchant interface also includes a section for presenting the findings of the data analysis. This will be presented by a chatbot, which can be conversed with on the findings.</p>
@@ -309,13 +381,14 @@ export default function BlankPlaygroundPage() {
               <h2 className="font-inter text-lg font-semibold leading-snug text-zinc-950 md:text-xl">Dev Log</h2>
               <p className="mt-6 font-inter text-sm leading-relaxed text-zinc-600">Ongoing updates on the project's development</p>
             </div>
-            <div className="flex min-h-44 flex-col justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] md:p-6">
+            <Link href="/playground/synthetic-economy" className="flex min-h-44 flex-col justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:border-sky-400 md:p-6">
               <h2 className="font-inter text-lg font-semibold leading-snug text-zinc-950 md:text-xl">Synthetic Economy</h2>
               <p className="mt-6 font-inter text-sm leading-relaxed text-zinc-600">Details on how a synthetic economy is used to generate data for analysis</p>
-            </div>
+            </Link>
           </div>
-        </div>
-      </section>
+          </div>
+        </section>
+      </OneTimeReveal>
     </main>
   );
 }

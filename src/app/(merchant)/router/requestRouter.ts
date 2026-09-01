@@ -1,11 +1,9 @@
-import type { AnalysisRequest } from "@/app/types/analysisMachine";
+import type { AnalysisRequest, PersistedMetric } from "@/app/types/slice3MetricsAndHistory/analysisRequest";
 import { analysisMachine } from "@/app/service/metricsAndHistory/analysisMachine";
 import { metricHistoryMachine } from "@/app/service/metricsAndHistory/metricHistoryMachine";
-import type { PersistedMetric } from "@/app/types/metricHistory";
 
 const persistedMetrics: PersistedMetric[] = [
     "revenue",
-    "customers",
     "orders",
     "itemsSold",
 ];

@@ -1,4 +1,4 @@
-import { Period } from "../../types/analysisMachine";
+import { Period } from "../../types/slice3MetricsAndHistory/analysisRequest";
 import type { OrderForAnalysis } from "../../repositories/aiSlice/getOrdersForAnalysis_DB_op";
 import { toBusinessDate } from "../timeSeries/businessDates";
 
