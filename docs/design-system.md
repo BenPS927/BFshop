@@ -18,9 +18,9 @@
 - Desktop: lg:px-8
 
 2. Section padding (top/bottom for major blocks)
-- Mobile: py-6
-- Tablet: md:py-8
-- Desktop: lg:py-12
+- Mobile: py-9
+- Tablet: md:py-12
+- Desktop: lg:py-18
 
 3. Card or panel padding
 - Mobile: p-4
@@ -104,6 +104,13 @@
 - Use one shared columns array as the data source for both render paths.
 - Mobile: one column visible at a time.
 - Large: all columns visible simultaneously.
+
+## Project Navigation
+- Position the shared project navigation at the top left of portal, merchant, customer, intelligence and order pages.
+- Mobile: show the current page as the closed menu label and reveal the full list as a dropdown.
+- Tablet and desktop: keep the full vertical navigation list visible.
+- Give the current page slightly larger, accented text while keeping the remaining entries restrained.
+- Use the existing light, dark or customer colour treatment of the surrounding page.
 
 ## Consistency Rule
 Any new component should map to this scale first. If a new spacing or typography value is required, update this document before use in product code.

@@ -1,22 +1,13 @@
 "use client";
 
-import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ContextGuide } from "@/components/shared/ContextGuide";
+import { ProjectPageHeader } from "@/components/shared/ProjectPageHeader";
 import { useMerchantTheme } from "../../(merchant)/merchant/useMerchantTheme";
 import type { AnalysisRequest, Filter, Metric } from "../../types/slice3MetricsAndHistory/analysisRequest";
 import { syntheticSuburbs } from "@/data/syntheticEconomy/locations";
 
 const portalAreas = [
-  {
-    title: "Project Introduction",
-    description: "Read to understand the project's vision and architecture.",
-    href: "/playground/introduction",
-    size: "small",
-  },
   {
     title: "Analysis machine",
     href: "",
@@ -26,6 +17,12 @@ const portalAreas = [
     title: "Project notes",
     description: "See the thinking, experiments, and unfinished edges behind BFshop.",
     href: "/playground",
+    size: "small",
+  },
+  {
+    title: "Project Introduction",
+    description: "Read to understand the project's vision and architecture.",
+    href: "/playground/introduction",
     size: "small",
   },
 ] as const;
@@ -180,7 +177,7 @@ function AnalysisMachinePanel({ lightMode }: { lightMode: boolean }) {
     <article className={`min-h-[520px] rounded-lg border p-5 shadow-[0_16px_40px_rgba(0,0,0,0.18)] md:p-6 lg:grid lg:grid-cols-2 lg:gap-8 ${panel}`}>
       <header className="mb-8 text-center lg:col-span-2 lg:mb-0">
         <h2 className="font-inter text-2xl font-semibold leading-snug md:text-3xl">Intelligence Interface </h2>
-        <p className={`mt-2 font-inter text-sm leading-relaxed ${muted}`}>Construct a request by selecting a metric and adding filters. the right box will show you the output directly from the database.</p>
+        <p className={`mt-2 font-inter text-sm leading-relaxed ${muted}`}>Construct a request by selecting a metric and adding filters. This will return the information from the database.</p>
       </header>
       <section className="flex min-w-0 flex-col">
       
@@ -270,56 +267,36 @@ export default function BlankPlaygroundPage() {
   const { lightMode, themeReady, toggleTheme } = useMerchantTheme();
 
   return (
-    <main className={`min-h-screen px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-12 ${themeReady ? "opacity-100" : "opacity-0"} ${lightMode ? "bg-[radial-gradient(1000px_500px_at_15%_-10%,rgba(14,165,233,0.12),transparent_60%),linear-gradient(180deg,#F8FAFC_0%,#EAF1F7_100%)] text-zinc-950" : "bg-[radial-gradient(900px_520px_at_86%_4%,rgba(14,165,233,0.13),transparent_62%),radial-gradient(760px_460px_at_8%_42%,rgba(255,255,255,0.05),transparent_64%),linear-gradient(180deg,#050505_0%,#0a0a0a_52%,#121212_100%)] text-white"}`}>
-      <div className="mx-auto max-w-none">
-        <div className="flex items-center justify-between">
-          <a
-            href="https://benfosterdev.com/"
-            className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 font-inter text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${lightMode ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700" : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"}`}
-          >
-            <ArrowBackIcon fontSize="small" />
-            Back
-          </a>
-          <div className="flex items-center gap-2">
-            <ContextGuide guideId="project-portal" message="This is the project portal. Here you can use the current version of the intelligence interface to query the database, read up on the documentation, or navigate to the merchant or customer ends." lightMode={lightMode} />
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
-              title={`Switch to ${lightMode ? "dark" : "light"} mode`}
-              className={`grid size-11 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${lightMode ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700" : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"}`}
-            >
-              {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
-            </button>
-          </div>
-        </div>
-
-        <header className={`mx-auto max-w-6xl border-b pb-8 text-center md:pb-10 lg:pb-12 ${lightMode ? "border-zinc-300" : "border-white/15"}`}>
-          <div>
-            <h1 className="font-bebas text-4xl leading-tight tracking-[0.08em] md:text-5xl lg:text-6xl">BF<span className={lightMode ? "text-sky-700" : "text-sky-400"}>shop</span></h1>
-          </div>
-          <div className={`mt-4 font-inter text-base leading-relaxed md:mt-6 md:text-lg ${lightMode ? "text-zinc-700" : "text-zinc-300"}`}>
-            BFshop is an under-construction simulated ecommerce business used to develop an intelligence system that identifies what matters, explains it simply and suggests what to do next — without swamping the merchant with analytics dashboards.
-          </div>
-         
-          <div className={`mt-4 font-inter text-sm leading-relaxed md:text-base ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>
-            Beneath is a copy of the main interface of BFshop, which will be continually updated as the project progresses.
-          </div>
-        </header>
+    <main className={`min-h-screen px-4 py-9 md:px-6 md:py-12 lg:px-8 lg:py-18 ${themeReady ? "opacity-100" : "opacity-0"} ${lightMode ? "bg-[radial-gradient(1000px_500px_at_15%_-10%,rgba(14,165,233,0.12),transparent_60%),linear-gradient(180deg,#F8FAFC_0%,#EAF1F7_100%)] text-zinc-950" : "bg-[radial-gradient(900px_520px_at_86%_4%,rgba(14,165,233,0.13),transparent_62%),radial-gradient(760px_460px_at_8%_42%,rgba(255,255,255,0.05),transparent_64%),linear-gradient(180deg,#050505_0%,#0a0a0a_52%,#121212_100%)] text-white"}`}>
+      <div className="mx-auto max-w-[1600px]">
+        <ProjectPageHeader
+          title="BF"
+          accentTitle="shop"
+          lightMode={lightMode}
+          toggleTheme={toggleTheme}
+          guideId="project-portal"
+          guideMessage="This is the project portal. Here you can use the current version of the intelligence interface to query the database, read up on the documentation, or navigate to the merchant or customer ends. Use the nav bar at the top left to navigate the project."
+          mobileGuideMessage="Use the interface, read the docs, or visit the shop. Use the top-left nav to move around."
+          subtitle="BFshop is an experimental project aimed at simplifying eCommerce analytics by replacing traditional chart heavy dashboards with a chat based workspace"
+          mobileSubtitle="BFshop is an experimental project aimed at simplifying eCommerce analytics by replacing traditional chart heavy dashboards with a chat based workspace."
+          secondarySubtitle="Beneath is a copy of the main interface of BFshop, which will be continually updated as the project progresses."
+          mobileSecondarySubtitle="This is the project portal, where you can use the Intelligence interface or read the documentation below."
+        />
 
         <OneTimeReveal trigger="load" delay={150}>
-          <div className={`mx-auto mt-8 max-w-6xl text-center font-inter text-sm leading-relaxed md:mt-10 md:text-base ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>
-            The first iteration of BFshop's intelligence interface. You can filter what data to ask for and this comes directly from the database. This is one step in th evolution towards an AI chat interface presenting insights on the simulated business, and offering suggestions.
+          <div className={`mx-auto mt-[60px] max-w-6xl text-center font-inter text-sm leading-relaxed sm:mt-12 md:mt-[60px] md:text-base ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>
+            <span className="sm:hidden">Query the data and see the results. This interface will evolve over time.</span>
+            <span className="hidden sm:inline">The first iteration of BFshop&apos;s intelligence interface. You can filter what data to ask for and this comes directly from the database. This is one step in th evolution towards an AI chat interface presenting insights on the simulated business, and offering suggestions.</span>
           </div>
         </OneTimeReveal>
 
-        <section className="mt-8 grid gap-20 md:mt-10 md:grid-cols-2 md:gap-24 lg:mt-16 lg:grid-cols-[296px_minmax(0,1fr)_296px] lg:items-stretch lg:gap-12" aria-label="BFshop project areas">
+        <section className="mt-12 grid gap-28 md:mt-[60px] md:grid-cols-2 md:gap-32 lg:mt-24 lg:grid-cols-[296px_minmax(0,1fr)_296px] lg:items-stretch lg:gap-18" aria-label="BFshop project areas">
           {portalAreas.map((area) => (
             <OneTimeReveal
               key={area.title}
               trigger="load"
               delay={area.title === "Analysis machine" ? 300 : 750}
-              className={area.title === "Analysis machine" ? "h-full" : "h-full lg:mt-24 lg:h-[300px] lg:self-start"}
+              className={`${area.title === "Analysis machine" ? "h-full lg:order-2" : area.title === "Project notes" ? "h-full lg:order-3 lg:mt-24 lg:h-[300px] lg:self-start" : "h-full lg:order-1 lg:mt-24 lg:h-[300px] lg:self-start"}`}
             >
             {area.title === "Analysis machine" ? (
               <AnalysisMachinePanel lightMode={lightMode} />

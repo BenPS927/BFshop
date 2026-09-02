@@ -67,10 +67,11 @@ Interactive spaces such as the Order Hub and Intelligence Interface should visib
 
 ## Context guides
 
-- A page guide may open automatically on a user's first visit to that page.
+- A page guide opens automatically only on the user's first visit to that page.
+- Its first automatic appearance begins 650ms after the page is reached and dismisses after five seconds.
 - After its first appearance, the guide remains available through a small, consistent control beside the theme switch.
 - Guides open as compact dropdowns and must not block the rest of the interface.
-- Opening and closing use a brief 200ms fade with minimal vertical movement.
+- Opening and closing use a smooth 400ms fade with minimal vertical movement.
 - Guides close through their dismissal action, the Escape key or a click outside.
 
 ## Timing and easing

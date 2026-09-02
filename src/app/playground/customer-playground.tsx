@@ -2,6 +2,7 @@
 
 import ShoppingBasketIcon from "@mui/icons-material/ShoppingBasket";
 import Link from "next/link";
+import { ProjectPageHeader } from "@/components/shared/ProjectPageHeader";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 type Product = {
@@ -221,12 +222,17 @@ export default function CustomerPlayground({ productBasePath = "/playground/prod
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center bg-neutral-100 px-4 py-6 text-neutral-950 md:px-6 md:py-8 lg:px-8 lg:py-12">
+    <main className="relative flex min-h-screen flex-col items-center bg-neutral-100 px-4 py-9 text-neutral-950 md:px-6 md:py-12 lg:px-8 lg:py-18">
       {notice && <div role="status" className="fixed right-4 top-4 z-[200] rounded border border-green-300 bg-green-100 px-4 py-3 font-inter text-sm text-green-900 shadow-lg">{notice}</div>}
-      <Link href="/" className="absolute left-4 top-4 font-inter text-sm text-gray-500 transition hover:text-neutral-950">&larr; Back</Link>
-      <div className="flex w-full max-w-full flex-col items-center justify-center space-y-16 p-8 lg:p-16">
-        <h1 className="border-b border-orange-500 p-2 text-center font-bebas text-4xl leading-tight tracking-wide md:text-5xl lg:p-8 lg:text-6xl">BF <span className="text-[orange]">Customer</span></h1>
-        <h2 className="p-2 text-left text-base leading-relaxed text-gray-600 md:text-center md:text-lg lg:p-8">This is BF Customer, the customer end of BFShop. Here, you will be able to place orders which will appear in BF Merchant, which you can get to by going back and to the Merchant interface (when it&apos;s built).</h2>
+      <div className="w-full max-w-[1600px]">
+        <ProjectPageHeader
+          title="BF"
+          accentTitle="Customer"
+          lightMode
+          accent="orange"
+          subtitle="The customer end of BFshop where orders can be placed. Once placed here, they will appear in the received column in the order hub."
+          mobileSubtitle="Browse products and place orders into BFshop."
+        />
       </div>
       <Cart onOrderSuccess={showOrderSuccess} />
       <p className="text-2xl font-semibold text-neutral-950">Have a browse!</p>

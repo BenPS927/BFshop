@@ -5,25 +5,30 @@ import { useEffect, useId, useRef, useState } from "react";
 type ContextGuideProps = {
   guideId: string;
   message: string;
+  mobileMessage?: string;
   lightMode: boolean;
 };
 
-export function ContextGuide({ guideId, message, lightMode }: ContextGuideProps) {
+export function ContextGuide({ guideId, message, mobileMessage, lightMode }: ContextGuideProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownId = useId();
 
   useEffect(() => {
     const storageKey = `bfshop-context-guide-${guideId}`;
+    if (window.localStorage.getItem(storageKey) === "seen") return;
 
-    if (window.localStorage.getItem(storageKey) !== "seen") {
+    const entranceTimer = window.setTimeout(() => {
       setOpen(true);
       window.localStorage.setItem(storageKey, "seen");
-    }
+    }, 650);
+    return () => window.clearTimeout(entranceTimer);
   }, [guideId]);
 
   useEffect(() => {
     if (!open) return;
+
+    const dismissalTimer = window.setTimeout(() => setOpen(false), 5000);
 
     function closeOnOutsideClick(event: MouseEvent) {
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
@@ -37,6 +42,7 @@ export function ContextGuide({ guideId, message, lightMode }: ContextGuideProps)
     document.addEventListener("keydown", closeOnEscape);
 
     return () => {
+      window.clearTimeout(dismissalTimer);
       document.removeEventListener("mousedown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
     };
@@ -51,13 +57,13 @@ export function ContextGuide({ guideId, message, lightMode }: ContextGuideProps)
   const muted = lightMode ? "text-zinc-600" : "text-zinc-400";
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} data-guide-id={guideId} className="relative">
       <button
         type="button"
         aria-expanded={open}
         aria-controls={dropdownId}
         onClick={() => setOpen((current) => !current)}
-        className={`h-9 rounded-md border px-3 font-inter text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${control}`}
+        className={`h-11 rounded-md border px-3 font-inter text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${control}`}
       >
         Guide
       </button>
@@ -66,10 +72,13 @@ export function ContextGuide({ guideId, message, lightMode }: ContextGuideProps)
         id={dropdownId}
         role="dialog"
         aria-hidden={!open}
-        className={`absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-lg border p-4 text-left shadow-[0_16px_40px_rgba(0,0,0,0.22)] transition-[opacity,transform] duration-200 ease-out motion-reduce:translate-y-0 motion-reduce:transition-none ${dropdown} ${open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0"}`}
+        className={`absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-lg border p-4 text-left shadow-[0_16px_40px_rgba(0,0,0,0.22)] transition-[opacity,transform] duration-[400ms] ease-in-out motion-reduce:translate-y-0 motion-reduce:transition-none ${dropdown} ${open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"}`}
       >
         
-        <p className={`mt-2 font-inter text-sm leading-relaxed ${muted}`}>{message}</p>
+        <p className={`mt-2 font-inter text-sm leading-relaxed ${muted}`}>
+          <span className="sm:hidden">{mobileMessage ?? message}</span>
+          <span className="hidden sm:inline">{message}</span>
+        </p>
         <button
           type="button"
           onClick={() => setOpen(false)}

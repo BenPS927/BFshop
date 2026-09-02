@@ -1,12 +1,9 @@
 "use client";
 
-import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
-import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LayoutGroup, motion } from "framer-motion";
 import type { CreatedOrder } from "@/app/types/orders";
-import { ContextGuide } from "@/components/shared/ContextGuide";
+import { ProjectPageHeader } from "@/components/shared/ProjectPageHeader";
 import { WorkspaceReveal } from "@/components/shared/WorkspaceReveal";
 import { useMerchantTheme } from "../useMerchantTheme";
 
@@ -487,54 +484,26 @@ export default function MerchantOrdersPage() {
 
   return (
     <main
-      className={`min-h-screen px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-12 ${themeReady ? "opacity-100" : "opacity-0"} ${
+      className={`min-h-screen px-4 py-9 md:px-6 md:py-12 lg:px-8 lg:py-18 ${themeReady ? "opacity-100" : "opacity-0"} ${
         lightMode
           ? "bg-[radial-gradient(1000px_500px_at_15%_-10%,rgba(14,165,233,0.12),transparent_60%),linear-gradient(180deg,#F8FAFC_0%,#EAF1F7_100%)] text-zinc-950"
           : "bg-[radial-gradient(1200px_500px_at_15%_-10%,rgba(255,255,255,0.06),transparent_60%),linear-gradient(180deg,#050505_0%,#0A0A0A_45%,#121212_100%)] text-white"
       }`}
     >
-      <section className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1600px] grid-rows-[auto_1fr] gap-6 md:min-h-[calc(100vh-4rem)] md:gap-8 lg:min-h-[calc(100vh-6rem)] lg:gap-12">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
-          <div className="pt-2">
-            <Link
-              href="/merchant"
-              className={`font-inter text-xs font-semibold uppercase tracking-[0.14em] transition ${
-                lightMode ? "text-sky-700 hover:text-sky-900" : "text-sky-400 hover:text-sky-300"
-              }`}
-            >
-              BFshop / Merchant
-            </Link>
-          </div>
-
-          <h1
-            className={`border-b p-2 text-center font-bebas text-4xl leading-tight tracking-[0.12em] md:text-5xl lg:p-8 lg:text-6xl ${
-              lightMode ? "border-sky-700" : "border-sky-400"
-            }`}
-          >
-            Order <span className={lightMode ? "text-sky-700" : "text-sky-400"}>Hub</span>
-          </h1>
-
-          <div className="flex items-center gap-2 justify-self-end">
-            <ContextGuide guideId="order-hub" message="This is where orders placed in the merchant end, or generated regularly by the synthetic economy, go to." lightMode={lightMode} />
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
-              title={`Switch to ${lightMode ? "dark" : "light"} mode`}
-              className={`grid size-11 shrink-0 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
-                lightMode
-                  ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700"
-                  : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"
-              }`}
-            >
-              {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
-            </button>
-          </div>
-        </header>
+      <section className="mx-auto grid min-h-[calc(100vh-4.5rem)] max-w-[1600px] grid-rows-[auto_1fr] gap-12 md:min-h-[calc(100vh-6rem)] md:gap-12 lg:min-h-[calc(100vh-9rem)] lg:gap-18">
+        <ProjectPageHeader
+          title="Order"
+          accentTitle="Hub"
+          guideId="order-hub"
+          guideMessage="This is where orders placed in the merchant end, or generated regularly by the synthetic economy, go to."
+          mobileGuideMessage="View orders from the shop and synthetic economy."
+          lightMode={lightMode}
+          toggleTheme={toggleTheme}
+        />
 
         <WorkspaceReveal>
           <LayoutGroup>
-            <div className="-mr-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:-mr-6 md:gap-6 lg:mr-0 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
+            <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:gap-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0">
               {boards.map((board) => (
                 <div key={board.id} className="w-[calc(100vw-2rem)] shrink-0 snap-center lg:w-auto">
                   <BoardPanel board={board} lightMode={lightMode} />
