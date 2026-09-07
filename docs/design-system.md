@@ -114,3 +114,15 @@
 
 ## Consistency Rule
 Any new component should map to this scale first. If a new spacing or typography value is required, update this document before use in product code.
+
+## Background Treatment
+- Use restrained layered radial and vertical gradients to add depth to main project surfaces.
+- Portal and merchant surfaces use the existing sky-blue accent; Customer uses its orange accent.
+- Keep gradients low contrast so cards, controls and content remain the visual focus.
+
+## Intelligence Interface
+- Use one shared chart interface in the project portal and merchant workspace.
+- Present the result title first, followed by compact controls for metric, period and filters.
+- Each closed control displays its current configuration.
+- Map chart titles, axis meaning and plotted series from the Results Contract rather than metric-specific components.
+- Keep plot grid lines restrained and allow the chart library to scale values to the available plotting area.

@@ -1,10 +1,10 @@
-import { requestRouter } from "@/app/(merchant)/router/requestRouter";
+import { metricAnalysisService } from "@/app/service/metricsAndHistory/metricAnalysisService";
 import type { AnalysisRequest } from "@/app/types/slice3MetricsAndHistory/analysisRequest";
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as AnalysisRequest;
-    const result = await requestRouter(body);
+    const result = await metricAnalysisService(body);
 
     return Response.json(result, { status: 200 });
   } catch (error) {

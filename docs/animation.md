@@ -40,11 +40,12 @@ BFshop should feel professional, sleek and responsive rather than static. Animat
 
 ## Interactive workspaces
 
-Interactive spaces such as the Order Hub and Intelligence Interface should visibly respond to commands and incoming information.
+Interactive spaces such as the Customer shop, Order Hub and Intelligence Interface should visibly respond to commands and incoming information.
 
 - Merchant page headers and navigation appear immediately once the correct theme is resolved.
 - The primary workspace reveals once as a single group using a subtle 500ms fade and small upward movement.
 - Merchant workspace panels should not use staggered page-entry animation.
+- The Customer product workspace reveals once as a single group while its title and subtitle remain static.
 - Movement should show where an item came from and where it went.
 - Orders changing status should transition between their previous and new locations.
 - Panels, evidence and charts should expand or appear smoothly without delaying access.

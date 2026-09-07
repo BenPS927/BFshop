@@ -1,11 +1,14 @@
-import type { OrderForAnalysis } from "../../repositories/aiSlice/getOrdersForAnalysis_DB_op";
 import type { Period } from "../../types/slice3MetricsAndHistory/analysisRequest";
 import { listBusinessDates, toBusinessDate } from "./businessDates";
 
-export type OrderIntervalGroup = {
+type DatedOrder = {
+  created_at: Date;
+};
+
+export type OrderIntervalGroup<TOrder extends DatedOrder> = {
   startDate: string;
   endDate: string;
-  orders: OrderForAnalysis[];
+  orders: TOrder[];
 };
 
 function parseDate(date: string): Date {
@@ -39,12 +42,12 @@ function getNaturalBounds(
   return [formatDate(start), formatDate(end)];
 }
 
-export function groupOrdersByInterval(
-  orders: OrderForAnalysis[],
+export function groupOrdersByInterval<TOrder extends DatedOrder>(
+  orders: TOrder[],
   period: Period
-): OrderIntervalGroup[] {
+): OrderIntervalGroup<TOrder>[] {
   const [requestedStart, requestedEnd] = period.dateRange;
-  const groups = new Map<string, OrderIntervalGroup>();
+  const groups = new Map<string, OrderIntervalGroup<TOrder>>();
 
   for (const date of listBusinessDates(requestedStart, requestedEnd)) {
     const [naturalStart, naturalEnd] = getNaturalBounds(date, period.interval);

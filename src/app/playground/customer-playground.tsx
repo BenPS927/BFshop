@@ -3,6 +3,7 @@
 import ShoppingBasketIcon from "@mui/icons-material/ShoppingBasket";
 import Link from "next/link";
 import { ProjectPageHeader } from "@/components/shared/ProjectPageHeader";
+import { WorkspaceReveal } from "@/components/shared/WorkspaceReveal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 type Product = {
@@ -222,7 +223,7 @@ export default function CustomerPlayground({ productBasePath = "/playground/prod
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center bg-neutral-100 px-4 py-9 text-neutral-950 md:px-6 md:py-12 lg:px-8 lg:py-18">
+    <main className="relative flex min-h-screen flex-col items-center bg-[radial-gradient(1050px_560px_at_88%_-8%,rgba(249,115,22,0.16),transparent_58%),radial-gradient(780px_500px_at_4%_42%,rgba(251,146,60,0.07),transparent_64%),linear-gradient(180deg,#FAFAF9_0%,#F1ECE7_100%)] px-4 py-9 text-neutral-950 md:px-6 md:py-12 lg:px-8 lg:py-18">
       {notice && <div role="status" className="fixed right-4 top-4 z-[200] rounded border border-green-300 bg-green-100 px-4 py-3 font-inter text-sm text-green-900 shadow-lg">{notice}</div>}
       <div className="w-full max-w-[1600px]">
         <ProjectPageHeader
@@ -230,13 +231,18 @@ export default function CustomerPlayground({ productBasePath = "/playground/prod
           accentTitle="Customer"
           lightMode
           accent="orange"
+          guideId="customer-shop"
+          guideMessage="This is the customer end of BFshop. Browse products, add items to the basket and place an order. Once placed, the order will appear in the received column in Order Hub."
+          mobileGuideMessage="Browse products, add items and place an order. It will appear in Order Hub."
           subtitle="The customer end of BFshop where orders can be placed. Once placed here, they will appear in the received column in the order hub."
           mobileSubtitle="Browse products and place orders into BFshop."
         />
       </div>
       <Cart onOrderSuccess={showOrderSuccess} />
-      <p className="text-2xl font-semibold text-neutral-950">Have a browse!</p>
-      {isLoading ? <p className="font-inter text-lg text-gray-500">Products loading...</p> : loadError ? <p role="alert" className="font-inter text-lg text-red-700">{loadError}</p> : products.length === 0 ? <p className="font-inter text-lg text-gray-500">No products available.</p> : <div className="grid w-full max-w-full grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-6">{products.map((product) => <ProductCard key={product.id} product={product} productBasePath={productBasePath} />)}</div>}
+      <WorkspaceReveal className="flex w-full flex-col items-center gap-6">
+        <p className="text-2xl font-semibold text-neutral-950">Have a browse!</p>
+        {isLoading ? <p className="font-inter text-lg text-gray-500">Products loading...</p> : loadError ? <p role="alert" className="font-inter text-lg text-red-700">{loadError}</p> : products.length === 0 ? <p className="font-inter text-lg text-gray-500">No products available.</p> : <div className="grid w-full max-w-full grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-6">{products.map((product) => <ProductCard key={product.id} product={product} productBasePath={productBasePath} />)}</div>}
+      </WorkspaceReveal>
     </main>
   );
 }

@@ -38,7 +38,8 @@ export function ProjectPageHeader({
   const accentBorder = accent === "orange" ? "border-orange-500" : lightMode ? "border-sky-700" : "border-sky-400";
   const primaryText = lightMode ? "text-zinc-700" : "text-zinc-300";
   const secondaryText = lightMode ? "text-zinc-600" : "text-zinc-400";
-  const hasControls = Boolean(toggleTheme && guideId && guideMessage);
+  const hasGuide = Boolean(guideId && guideMessage);
+  const hasControls = hasGuide || Boolean(toggleTheme);
 
   return (
     <header className="relative grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-9 pb-3 sm:block sm:min-h-[260px] sm:pb-0 lg:h-[300px]">
@@ -48,16 +49,18 @@ export function ProjectPageHeader({
 
       {hasControls && (
         <div className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end sm:absolute sm:right-0 sm:top-0">
-          <ContextGuide guideId={guideId!} message={guideMessage!} mobileMessage={mobileGuideMessage} lightMode={lightMode} />
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            title={`Switch to ${lightMode ? "dark" : "light"} mode`}
-            className={`grid size-11 shrink-0 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${lightMode ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700" : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"}`}
-          >
-            {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
-          </button>
+          {hasGuide && <ContextGuide guideId={guideId!} message={guideMessage!} mobileMessage={mobileGuideMessage} lightMode={lightMode} />}
+          {toggleTheme && (
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${lightMode ? "dark" : "light"} mode`}
+              title={`Switch to ${lightMode ? "dark" : "light"} mode`}
+              className={`grid size-11 shrink-0 place-items-center rounded-md border transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${lightMode ? "border-zinc-300 bg-white text-zinc-800 hover:border-sky-600 hover:text-sky-700" : "border-white/20 bg-white/[0.08] text-zinc-100 hover:border-sky-400 hover:text-sky-300"}`}
+            >
+              {lightMode ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
+            </button>
+          )}
         </div>
       )}
 

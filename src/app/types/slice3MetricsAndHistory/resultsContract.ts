@@ -1,24 +1,13 @@
-export type ResultsContract = Partial<
-  Record<ResultMetric, MetricResult>
->;
-
-export type ResultMetric =
-  | "revenue"
-  | "orders"
-  | "itemsSold";
-
-export type MetricResult = {
-  total: number;
-  series?: MetricSeries;
-};
-
-export type MetricSeries = {
-  interval: "day" | "week" | "month";
-  periods: MetricPeriod[];
-};
-
-export type MetricPeriod = {
-  startDate: string;
-  endDate: string;
-  value: number;
+export type ResultsContract = {
+  title: string;
+  metric: "revenue" | "orders" | "itemsSold";
+  interval?: "day" | "week" | "month";
+  axes: { x: { unit: "date" | "number" | "category"; };
+          y: { unit: "currency" | "count" | "percentage" | "number";};
+        };
+  series: { key: string;
+            label: string;
+            points: { x: string | number;
+                      y: number;}[];
+          }[];
 };

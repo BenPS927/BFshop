@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-export function WorkspaceReveal({ children }: { children: ReactNode }) {
+export function WorkspaceReveal({ children, className = "" }: { children: ReactNode; className?: string }) {
   const [visible, setVisible] = useState(false);
   const timeoutRef = useRef<number | undefined>(undefined);
 
@@ -21,7 +21,7 @@ export function WorkspaceReveal({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`min-w-0 transition-[opacity,transform] duration-500 ease-in-out motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none ${visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
+      className={`min-w-0 transition-[opacity,transform] duration-500 ease-in-out motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none ${visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"} ${className}`}
     >
       {children}
     </div>

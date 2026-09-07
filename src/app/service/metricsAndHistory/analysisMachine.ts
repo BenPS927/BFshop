@@ -7,7 +7,7 @@ import { filterByLocation } from "@/app/analytics/filters/filterByLocation"
 import { groupOrdersByInterval } from "@/app/analytics/timeSeries/groupOrdersByInterval"
 import type { OrderForAnalysis } from "../../repositories/aiSlice/getOrdersForAnalysis_DB_op"
 import type { AnalysisRequest } from "../../types/slice3MetricsAndHistory/analysisRequest"
-import type { MetricResult, ResultsContract } from "../../types/slice3MetricsAndHistory/resultsContract"
+import type { ResultsContract } from "../../types/slice3MetricsAndHistory/resultsContract"
 
 type MetricCalculator = (orders: OrderForAnalysis[]) => number;
 

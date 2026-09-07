@@ -1,10 +1,4 @@
-import { Orders } from "../../types/slice3MetricsAndHistory/analysisData"
-
-
-export function totalRevenue(orders: Orders[]) {
-
-    const allOrders = orders
-
+export function totalRevenue(orders: { total: number }[]) {
     const revenue = orders.reduce((total, order) => {
         return total + Number(order.total); 
     }, 0); 
@@ -13,14 +7,16 @@ export function totalRevenue(orders: Orders[]) {
     
 }
 
-export function totalSales(orders: Orders[]) {
+export function totalSales(orders: unknown[]) {
 
     const sales = orders.length
 
     return sales 
 }
 
-export function totalItemsSold(orders: Orders[]) {
+export function totalItemsSold(
+    orders: { orderItems: { quantity: number }[] }[],
+) {
 
     const itemsSold = orders.reduce((orderTotal, order) => {
         const itemsInOrder = order.orderItems.reduce((itemTotal, orderItem) => {
