@@ -40,21 +40,25 @@ export async function metricHistoryMachine(
   }
 
   const history = await getMetricHistory_DB_op(request.period);
-  const periods = history.map((row) => ({
-    startDate: formatBusinessDate(row.startDate),
-    endDate: formatBusinessDate(row.endDate),
-    value: Number(row[metric]),
-  }));
-  const total = periods.reduce((sum, period) => sum + period.value, 0);
+  const label = metric === "itemsSold"
+    ? "Items sold"
+    : metric[0].toUpperCase() + metric.slice(1);
 
-  const result: ResultsContract = {};
-  result[metric] = {
-    total,
-    series: {
-      interval: request.period.interval,
-      periods,
+  return {
+    title: `${label} over time`,
+    metric,
+    interval: request.period.interval,
+    axes: {
+      x: { unit: "date" },
+      y: { unit: metric === "revenue" ? "currency" : "count" },
     },
+    series: [{
+      key: `metric:${metric}`,
+      label,
+      points: history.map((row) => ({
+        x: formatBusinessDate(row.startDate),
+        y: Number(row[metric]),
+      })),
+    }],
   };
-
-  return result;
 }
