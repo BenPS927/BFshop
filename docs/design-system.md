@@ -126,3 +126,5 @@ Any new component should map to this scale first. If a new spacing or typography
 - Each closed control displays its current configuration.
 - Map chart titles, axis meaning and plotted series from the Results Contract rather than metric-specific components.
 - Keep plot grid lines restrained and allow the chart library to scale values to the available plotting area.
+- In the merchant workspace, place saved views in a separate section beneath the editable chart.
+- Saved views use the shared chart renderer without configuration controls and appear in a responsive grid, with a maximum of five.

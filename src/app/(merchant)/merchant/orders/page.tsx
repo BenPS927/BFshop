@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { LayoutGroup, motion } from "framer-motion";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import type { CreatedOrder } from "@/app/types/orders";
+import type { OrderItemDetail } from "@/app/types/getOrderItems";
 import { ProjectPageHeader } from "@/components/shared/ProjectPageHeader";
 import { WorkspaceReveal } from "@/components/shared/WorkspaceReveal";
 import { useMerchantTheme } from "../useMerchantTheme";
@@ -61,6 +62,144 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
   );
 }
 
+type OrderCardProps = {
+  entry: ReceivedOrder;
+  index: number;
+  lightMode: boolean;
+  isNew: boolean;
+  isMuted?: boolean;
+  isDetailsOpen: boolean;
+  items: OrderItemDetail[];
+  isLoadingItems: boolean;
+  itemsError?: string;
+  actionLabel: string;
+  actionDisabled?: boolean;
+  onAction: () => void;
+  onViewItems: () => void;
+  onCloseItems: () => void;
+};
+
+function OrderCard({
+  entry,
+  index,
+  lightMode,
+  isNew,
+  isMuted = false,
+  isDetailsOpen,
+  items,
+  isLoadingItems,
+  itemsError,
+  actionLabel,
+  actionDisabled = false,
+  onAction,
+  onViewItems,
+  onCloseItems,
+}: OrderCardProps) {
+  const cardColour = isMuted
+    ? lightMode
+      ? "border-zinc-300/70 bg-zinc-200 text-zinc-700"
+      : "border-white/10 bg-black/35 text-zinc-500"
+    : lightMode
+      ? "border-zinc-200/70 bg-white text-zinc-900"
+      : "border-white/10 bg-white/[0.06] text-white";
+  const secondaryText = isMuted
+    ? lightMode ? "text-zinc-600" : "text-zinc-600"
+    : lightMode ? "text-zinc-600" : "text-zinc-400";
+  const buttonColour = lightMode
+    ? "border-sky-600/50 text-sky-700 hover:border-sky-600 hover:bg-sky-50 hover:text-sky-900"
+    : "border-sky-400/50 text-sky-300 hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100";
+
+  return (
+    <motion.article
+      layoutId={`order-${entry.id}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{
+        opacity: { duration: 0.35, delay: index * 0.04 },
+        layout: { duration: 0.8, ease: "easeInOut" },
+      }}
+      className={`min-h-56 overflow-hidden rounded-xl border p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:p-5 ${cardColour}`}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        {isDetailsOpen ? (
+          <motion.div
+            key="items"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-current/15 pb-3">
+              <div>
+                <p className={`font-inter text-xs font-semibold uppercase tracking-[0.12em] ${secondaryText}`}>Order items</p>
+                <h3 className="mt-1 font-inter text-lg font-semibold leading-snug">Order #{entry.id}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={onCloseItems}
+                aria-label={`Return to order ${entry.id}`}
+                title="Back to order"
+                className={`grid size-9 place-items-center rounded-full border font-inter text-lg transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${buttonColour}`}
+              >
+                ←
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {isLoadingItems ? (
+                <p className={`py-5 text-center font-inter text-sm ${secondaryText}`}>Loading items…</p>
+              ) : itemsError ? (
+                <p className="py-5 text-center font-inter text-sm text-rose-400">{itemsError}</p>
+              ) : items.length === 0 ? (
+                <p className={`py-5 text-center font-inter text-sm ${secondaryText}`}>No order items found.</p>
+              ) : (
+                items.map((item) => (
+                  <div key={item.id} className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-md border px-3 py-2 ${lightMode ? "border-zinc-200 bg-zinc-50" : "border-white/10 bg-black/20"}`}>
+                    <span className="truncate font-inter text-sm font-medium" title={item.product_name}>{item.product_name}</span>
+                    <span className={`font-inter text-xs ${secondaryText}`}>×{item.quantity}</span>
+                    <span className="font-inter text-sm font-medium">${Number(item.line_total).toFixed(2)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="summary"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="grid min-h-48 grid-rows-[auto_1fr_auto] gap-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h3 className={`font-inter font-medium leading-snug transition-[color,font-size,text-shadow] duration-300 ease-out ${isNew ? lightMode ? "text-xl text-sky-700 [text-shadow:0_0_8px_rgba(3,105,161,0.45)] md:text-2xl" : "text-xl text-sky-300 [text-shadow:0_0_8px_rgba(125,211,252,0.55)] md:text-2xl" : "text-lg md:text-xl"}`}>
+                Order #{entry.id}
+              </h3>
+              <span className={`shrink-0 font-inter text-base font-semibold leading-none ${isMuted ? secondaryText : lightMode ? "text-sky-700" : "text-sky-300"}`}>
+                ${Number(entry.total).toFixed(2)}
+              </span>
+            </div>
+
+            <div className={`border-t border-current/15 pt-3 font-inter text-xs leading-normal md:text-sm ${secondaryText}`}>
+              <p>Received {new Date(entry.created_at).toLocaleString()}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={onViewItems} className={`rounded-md border px-3 py-2 font-inter text-xs font-medium leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 md:text-sm ${buttonColour}`}>
+                View order items
+              </button>
+              <button type="button" onClick={onAction} disabled={actionDisabled} className={`rounded-md border px-3 py-2 font-inter text-xs font-medium leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-default disabled:opacity-60 md:text-sm ${buttonColour}`}>
+                {actionLabel}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.article>
+  );
+}
+
 export default function MerchantOrdersPage() {
   const { lightMode, themeReady, toggleTheme } = useMerchantTheme();
   const [receivedOrders, setReceivedOrders] = useState<ReceivedOrder[]>([]);
@@ -74,6 +213,10 @@ export default function MerchantOrdersPage() {
     delivered: true,
   });
   const loadedOrderIdsByColumn = useRef(new Map<string, Set<number>>());
+  const [openOrderId, setOpenOrderId] = useState<number | null>(null);
+  const [orderItemsByOrderId, setOrderItemsByOrderId] = useState<Record<number, OrderItemDetail[]>>({});
+  const [loadingOrderItemsId, setLoadingOrderItemsId] = useState<number | null>(null);
+  const [orderItemErrors, setOrderItemErrors] = useState<Record<number, string>>({});
 
   const newestFirst = (orders: ReceivedOrder[]) =>
     [...orders].sort(
@@ -115,166 +258,65 @@ export default function MerchantOrdersPage() {
     updateOrders(newestFirst(orders));
   };
 
-  const receivedContent = receivedOrders.map((entry) => (
-    <motion.article
+  const receivedContent = receivedOrders.map((entry, index) => (
+    <OrderCard
       key={entry.id}
-      layoutId={`order-${entry.id}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{
-        opacity: { duration: 0.35, delay: receivedOrders.indexOf(entry) * 0.04 },
-        layout: { duration: 0.8, ease: "easeInOut" },
-      }}
-      className={`grid gap-3 rounded-md border p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:gap-4 md:p-6 ${
-        lightMode ? "border-zinc-200/70 bg-white text-zinc-900" : "border-white/10 bg-white/[0.06] text-white"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className={`font-inter font-medium leading-snug transition-[color,font-size,text-shadow] duration-300 ease-out ${
-          newOrderIds.includes(entry.id)
-            ? lightMode
-              ? "text-xl text-sky-700 [text-shadow:0_0_8px_rgba(3,105,161,0.45)] md:text-2xl"
-              : "text-xl text-sky-300 [text-shadow:0_0_8px_rgba(125,211,252,0.55)] md:text-2xl"
-            : lightMode ? "text-lg text-zinc-900 md:text-xl" : "text-lg text-white md:text-xl"
-        }`}>
-          Order #{entry.id}
-        </h3>
-        <span className={`shrink-0 font-inter text-sm font-medium leading-none md:text-base ${lightMode ? "text-sky-700" : "text-sky-300"}`}>
-          ${entry.total.toFixed(2)}
-        </span>
-      </div>
-
-      <div className={`border-t pt-3 font-inter text-xs leading-normal md:pt-4 md:text-sm ${lightMode ? "border-zinc-200 text-zinc-600" : "border-white/15 text-zinc-400"}`}>
-        <p>Customer #{entry.customer_id}</p>
-        <p className="mt-2">Received {new Date(entry.created_at).toLocaleString()}</p>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => markAsSent(entry.id)}
-        className={`justify-self-start rounded-md border px-3 py-2 font-inter text-sm font-medium leading-none transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${
-          lightMode
-            ? "border-sky-600/50 text-sky-700 hover:border-sky-600 hover:bg-sky-50 hover:text-sky-900"
-            : "border-sky-400/50 text-sky-300 hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100"
-        }`}
-      >
-        Mark as sent
-      </button>
-    </motion.article>
-    ));
-
-  const sentContent = sentOrders.map((entry) => (
-    <motion.article
-      key={entry.id}
-      layoutId={`order-${entry.id}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{
-        opacity: { duration: 0.35, delay: sentOrders.indexOf(entry) * 0.04 },
-        layout: { duration: 0.8, ease: "easeInOut" },
-      }}
-      className={`grid gap-3 rounded-md border p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:p-6 ${
-        lightMode ? "border-zinc-200/70 bg-white text-zinc-900" : "border-white/10 bg-white/[0.06] text-white"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className={`font-inter font-medium leading-snug transition-[color,font-size,text-shadow] duration-300 ease-out ${
-          newOrderIds.includes(entry.id)
-            ? lightMode
-              ? "text-xl text-sky-700 [text-shadow:0_0_8px_rgba(3,105,161,0.45)] md:text-2xl"
-              : "text-xl text-sky-300 [text-shadow:0_0_8px_rgba(125,211,252,0.55)] md:text-2xl"
-            : lightMode ? "text-lg text-zinc-900 md:text-xl" : "text-lg text-white md:text-xl"
-        }`}>
-          Order #{entry.id}
-        </h3>
-        <span className={`shrink-0 font-inter text-sm font-medium leading-none md:text-base ${lightMode ? "text-sky-700" : "text-sky-300"}`}>
-          ${entry.total.toFixed(2)}
-        </span>
-      </div>
-
-      <div className={`border-t pt-3 font-inter text-xs leading-normal md:pt-4 md:text-sm ${lightMode ? "border-zinc-200 text-zinc-600" : "border-white/15 text-zinc-400"}`}>
-        <p>Customer #{entry.customer_id}</p>
-        <p className="mt-2">Sent {new Date(entry.created_at).toLocaleString()}</p>
-      </div>
-      <button
-        type="button"
-        onClick={() => markAsDelivered(entry.id)}
-        className={`justify-self-start rounded-md border px-3 py-2 font-inter text-sm font-medium leading-none transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${
-          lightMode
-            ? "border-sky-600/50 text-sky-700 hover:border-sky-600 hover:bg-sky-50 hover:text-sky-900"
-            : "border-sky-400/50 text-sky-300 hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100"
-        }`}
-      >
-        Mark as delivered
-      </button>
-    </motion.article>
+      entry={entry}
+      index={index}
+      lightMode={lightMode}
+      isNew={newOrderIds.includes(entry.id)}
+      isDetailsOpen={openOrderId === entry.id}
+      items={orderItemsByOrderId[entry.id] ?? []}
+      isLoadingItems={loadingOrderItemsId === entry.id}
+      itemsError={orderItemErrors[entry.id]}
+      actionLabel="Mark as sent"
+      onAction={() => markAsSent(entry.id)}
+      onViewItems={() => viewOrderItems(entry.id)}
+      onCloseItems={() => setOpenOrderId(null)}
+    />
   ));
 
-  const deliveredContent = deliveredOrders.map((entry) => (
-    <motion.article
+  const sentContent = sentOrders.map((entry, index) => (
+    <OrderCard
       key={entry.id}
-      layoutId={`order-${entry.id}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{
-        opacity: { duration: 0.35, delay: deliveredOrders.indexOf(entry) * 0.04 },
-        layout: { duration: 0.8, ease: "easeInOut" },
-      }}
-      className={`grid gap-3 rounded-md border p-4 shadow-[0_8px_20px_rgba(0,0,0,0.16)] md:p-6 ${
-        verifiedDeliveredOrderIds.includes(entry.id)
-          ? lightMode
-            ? "border-zinc-300/70 bg-zinc-200 text-zinc-700"
-            : "border-white/10 bg-black/35 text-zinc-500"
-          : lightMode
-            ? "border-zinc-200/70 bg-white text-zinc-900"
-            : "border-white/10 bg-white/[0.06] text-white"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className={`font-inter font-medium leading-snug transition-[color,font-size,text-shadow] duration-300 ease-out ${
-          newOrderIds.includes(entry.id)
-            ? lightMode
-              ? "text-xl text-sky-700 [text-shadow:0_0_8px_rgba(3,105,161,0.45)] md:text-2xl"
-              : "text-xl text-sky-300 [text-shadow:0_0_8px_rgba(125,211,252,0.55)] md:text-2xl"
-            : verifiedDeliveredOrderIds.includes(entry.id)
-              ? lightMode ? "text-lg text-zinc-700 md:text-xl" : "text-lg text-zinc-500 md:text-xl"
-              : lightMode ? "text-lg text-zinc-900 md:text-xl" : "text-lg text-white md:text-xl"
-        }`}>
-          Order #{entry.id}
-        </h3>
-        <span className={`shrink-0 font-inter text-sm font-medium leading-none md:text-base ${
-          verifiedDeliveredOrderIds.includes(entry.id)
-            ? lightMode ? "text-zinc-700" : "text-zinc-500"
-            : lightMode ? "text-sky-700" : "text-sky-300"
-        }`}>
-          ${entry.total.toFixed(2)}
-        </span>
-      </div>
-
-      <div className={`border-t pt-3 font-inter text-xs leading-normal md:pt-4 md:text-sm ${
-        verifiedDeliveredOrderIds.includes(entry.id)
-          ? lightMode ? "border-zinc-300 text-zinc-600" : "border-white/10 text-zinc-600"
-          : lightMode ? "border-zinc-200 text-zinc-600" : "border-white/15 text-zinc-400"
-      }`}>
-        <p>Customer #{entry.customer_id}</p>
-        <p className="mt-2">Delivered {new Date(entry.created_at).toLocaleString()}</p>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => verifyDelivered(entry.id)}
-        disabled={verifiedDeliveredOrderIds.includes(entry.id)}
-        className={`justify-self-start rounded-md border px-3 py-2 font-inter text-sm font-medium leading-none transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-default ${
-          lightMode
-            ? "border-sky-600/50 text-sky-700 hover:border-sky-600 hover:bg-sky-50 hover:text-sky-900"
-            : "border-sky-400/50 text-sky-300 hover:border-sky-300 hover:bg-sky-400/10 hover:text-sky-100"
-        }`}
-      >
-        {verifiedDeliveredOrderIds.includes(entry.id) ? "Delivery verified" : "Verify delivered"}
-      </button>
-      
-    </motion.article>
+      entry={entry}
+      index={index}
+      lightMode={lightMode}
+      isNew={newOrderIds.includes(entry.id)}
+      isDetailsOpen={openOrderId === entry.id}
+      items={orderItemsByOrderId[entry.id] ?? []}
+      isLoadingItems={loadingOrderItemsId === entry.id}
+      itemsError={orderItemErrors[entry.id]}
+      actionLabel="Mark as delivered"
+      onAction={() => markAsDelivered(entry.id)}
+      onViewItems={() => viewOrderItems(entry.id)}
+      onCloseItems={() => setOpenOrderId(null)}
+    />
   ));
+
+  const deliveredContent = deliveredOrders.map((entry, index) => {
+    const isVerified = verifiedDeliveredOrderIds.includes(entry.id);
+
+    return (
+      <OrderCard
+        key={entry.id}
+        entry={entry}
+        index={index}
+        lightMode={lightMode}
+        isNew={newOrderIds.includes(entry.id)}
+        isMuted={isVerified}
+        isDetailsOpen={openOrderId === entry.id}
+        items={orderItemsByOrderId[entry.id] ?? []}
+        isLoadingItems={loadingOrderItemsId === entry.id}
+        itemsError={orderItemErrors[entry.id]}
+        actionLabel={isVerified ? "Delivery verified" : "Verify delivered"}
+        actionDisabled={isVerified}
+        onAction={() => verifyDelivered(entry.id)}
+        onViewItems={() => viewOrderItems(entry.id)}
+        onCloseItems={() => setOpenOrderId(null)}
+      />
+    );
+  });
 
   const boards: Board[] = [
     {
@@ -392,6 +434,39 @@ export default function MerchantOrdersPage() {
     void loadSentOrders();
     void loadDeliveredOrders();
   }, []);
+
+  async function viewOrderItems(orderId: number) {
+    setOpenOrderId(orderId);
+
+    if (orderItemsByOrderId[orderId]) {
+      return;
+    }
+
+    setLoadingOrderItemsId(orderId);
+    setOrderItemErrors((current) => {
+      const next = { ...current };
+      delete next[orderId];
+      return next;
+    });
+
+    try {
+      const response = await fetch(`/api/merchant/viewDetails?orderId=${orderId}`);
+      const output = await response.json();
+
+      if (!response.ok) {
+        throw new Error(output.error ?? "Unable to load order items");
+      }
+
+      setOrderItemsByOrderId((current) => ({ ...current, [orderId]: output }));
+    } catch (error) {
+      setOrderItemErrors((current) => ({
+        ...current,
+        [orderId]: error instanceof Error ? error.message : "Unable to load order items",
+      }));
+    } finally {
+      setLoadingOrderItemsId((current) => current === orderId ? null : current);
+    }
+  }
 
   async function markAsSent(orderId: number) {
     const order = receivedOrders.find((entry) => entry.id === orderId);

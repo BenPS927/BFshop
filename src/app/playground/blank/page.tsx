@@ -177,10 +177,10 @@ export default function BlankPlaygroundPage() {
               <h2 className="font-inter text-lg font-semibold leading-snug text-zinc-950 md:text-xl">Vertical Slices</h2>
               <p className="mt-6 font-inter text-sm leading-relaxed text-zinc-600">Documentation on how each segment of the project is built</p>
             </Link>
-            <div className="flex min-h-44 flex-col justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] md:p-6">
+            <Link href="/playground/development-log" className="flex min-h-44 flex-col justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:border-sky-400 md:p-6">
               <h2 className="font-inter text-lg font-semibold leading-snug text-zinc-950 md:text-xl">Dev Log</h2>
               <p className="mt-6 font-inter text-sm leading-relaxed text-zinc-600">Ongoing updates on the project&apos;s development</p>
-            </div>
+            </Link>
             <Link href="/playground/synthetic-economy" className="flex min-h-44 flex-col justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition hover:border-sky-400 md:p-6">
               <h2 className="font-inter text-lg font-semibold leading-snug text-zinc-950 md:text-xl">Synthetic Economy</h2>
               <p className="mt-6 font-inter text-sm leading-relaxed text-zinc-600">Details on how a synthetic economy is used to generate data for analysis</p>

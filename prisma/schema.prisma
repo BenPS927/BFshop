@@ -20,7 +20,7 @@ model Customer {
   age     Int
   gender  String
 
-  orders  Order[]
+  orders Order[]
 }
 
 model Product {
@@ -57,8 +57,8 @@ model Order {
   total       Float
   created_at  DateTime @default(now())
 
-  customer    Customer   @relation(fields: [customer_id], references: [id])
-  orderItems  OrderItem[]
+  customer   Customer    @relation(fields: [customer_id], references: [id])
+  orderItems OrderItem[]
 }
 
 model OrderItem {
@@ -70,7 +70,7 @@ model OrderItem {
   unit_price   Float
   line_total   Float
 
-  order        Order  @relation(fields: [order_id], references: [id])
+  order Order @relation(fields: [order_id], references: [id])
 
   @@map("orderitem")
 }
@@ -86,4 +86,12 @@ model DailyMetricHistory {
   calculationVersion Int      @default(1)
 
   @@map("daily_metric_history")
+}
+
+model SavedChart {
+  id        Int      @id @default(autoincrement())
+  request   Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("saved_chart")
 }

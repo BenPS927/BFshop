@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && prisma generate --schema prisma/dev-log.schema.prisma",
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",

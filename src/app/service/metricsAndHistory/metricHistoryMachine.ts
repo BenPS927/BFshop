@@ -29,8 +29,8 @@ export async function metricHistoryMachine(
     throw new Error("Metric history requests currently require exactly one metric");
   }
 
-  if (!request.period) {
-    throw new Error("Metric history requests require a date period");
+  if (!request.period?.interval) {
+    throw new Error("Metric history requests currently require a date period and interval");
   }
 
   const metric = request.metrics[0];
@@ -46,15 +46,21 @@ export async function metricHistoryMachine(
 
   return {
     title: `${label} over time`,
+    chartType: "line",
     metric,
     interval: request.period.interval,
     axes: {
       x: { unit: "date" },
-      y: { unit: metric === "revenue" ? "currency" : "count" },
+      y: [{
+        key: metric,
+        label,
+        unit: metric === "revenue" ? "currency" : "count",
+      }],
     },
     series: [{
       key: `metric:${metric}`,
       label,
+      yAxisKey: metric,
       points: history.map((row) => ({
         x: formatBusinessDate(row.startDate),
         y: Number(row[metric]),

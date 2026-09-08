@@ -9,6 +9,31 @@ import { useMerchantTheme } from "../../../(merchant)/merchant/useMerchantTheme"
 
 const documentClass = "mt-4 space-y-4 text-zinc-700";
 
+const sliceThreeAcronyms = [
+  ["AI", "Artificial Intelligence"],
+  ["AM", "Analysis Machine"],
+  ["API", "Application Programming Interface"],
+  ["AR", "Analysis Request"],
+  ["II", "Intelligence Interface"],
+  ["MHDB", "Metric History Database"],
+  ["MHM", "Metric History Machine"],
+  ["RC", "Results Contract"],
+  ["VI", "Visual Interface"],
+] as const;
+
+function AcronymEntries() {
+  return (
+    <dl className="mt-3 space-y-2">
+      {sliceThreeAcronyms.map(([acronym, meaning]) => (
+        <div key={acronym}>
+          <dt className="font-semibold text-sky-700">{acronym}</dt>
+          <dd className="text-zinc-600">{meaning}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 function SliceContent({ slice }: { slice: string }) {
   if (slice === "slice-1") {
     return (
@@ -159,6 +184,18 @@ WrittenOrderItems { id: number; order_id: number; product_id: number; product_na
           <li>A &apos;request router&apos; function was built between the AM and API, where the request (more on the request later) is assessed; if the request contains only metric and period (such as orders placed in July) then it goes to the MHM. If it also contains a filter it goes to the AM.</li>
           <li>This led me to the realization on how fundamental data is to the project, and how the shape of the data coming down in the query and the data being sent back up in response, should have been determined among the very first things when building this slice. The next section will focus on these.</li>
         </ol>
+
+        <h4 className="pt-4 font-inter text-lg font-medium leading-snug text-zinc-950 md:text-xl lg:text-2xl">Data entities and chart building scaffolding</h4>
+        <p>I realized the data entities passing up and down the chain would be fundamental to the earlier mentioning of a &apos;structure, or a process, by which the data can be queried, and filtered on its properties&apos;, which itself would be a step towards a standardized chart creation architecture.</p>
+        <p>This led me to realise that chart creation variability could be achieved by mapping properties of a returning data structure to the visuals of a chart or the data shown on it; the title property becomes the title of the chart, a series of values becomes the plotted data.</p>
+        <p>This birthed the need to standardize two data shapes which together could be used universally in the project to call up almost any chart.</p>
+        <p>These are the results contract (RC) and the analysis request (AR). The AR would be populated with a query (for example revenue for a certain period from males), and the returning RC would include the information needed to produce a chart showing that information.</p>
+        <p>The ultimate variability in the RC and AR would allow for enormous variability in chart creation, providing an architecture which could be used throughout the project for calling up information, as well as providing visual analysis (in the case of overlaid averages, comparisons, breakdowns and scatter plots) without even creating actual analysis machinery.</p>
+
+        <h5 className="pt-3 font-inter text-base font-semibold leading-snug text-zinc-950 md:text-lg">Structural Changes</h5>
+        <p>I soon realized the AM could be used for all the current data retrieval. The MHM was redundant, but having daily snapshots of the metrics (the MHDB) would still be useful at some point.</p>
+        <p>All queries were rewired to go through the AM, and it was rebuilt to create custom database queries for only the given request, where it had been previously extracting all data and extracting from that, which was never a final solution.</p>
+        <p>This also brought into name the role of the AM, as it itself was no longer an analysis machine; its actual behaviour involved the calling of different functions such as totals and interval calculations and of course the database operation. It was renamed to metricAnalysisService. This is better because it correctly calls it a service but not perfect as it does not do analysis.</p>
       </>
     );
   }
@@ -183,7 +220,20 @@ export default function VerticalSliceDocumentPage() {
           </button>
         </div>
 
+        {slice === "slice-3" && (
+          <aside className="fixed right-4 top-24 z-20 hidden w-44 rounded-lg border border-zinc-200 bg-white/95 p-4 font-inter text-xs leading-normal text-zinc-700 shadow-[0_12px_30px_rgba(0,0,0,0.16)] backdrop-blur xl:block" aria-label="Acronym key">
+            <p className="font-semibold uppercase tracking-[0.12em] text-zinc-950">Acronym key</p>
+            <AcronymEntries />
+          </aside>
+        )}
+
         <article className="mx-auto mt-10 max-w-4xl bg-white px-8 py-12 text-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.22)] md:mt-16 md:min-h-[900px] md:px-16 md:py-20 lg:px-24">
+          {slice === "slice-3" && (
+            <details className="sticky top-3 z-20 mb-6 rounded-lg border border-zinc-200 bg-white/95 p-3 font-inter text-xs leading-normal text-zinc-700 shadow-md backdrop-blur xl:hidden">
+              <summary className="cursor-pointer font-semibold uppercase tracking-[0.12em] text-zinc-950">Acronym key</summary>
+              <AcronymEntries />
+            </details>
+          )}
           <h1 className="font-bebas text-4xl leading-tight tracking-[0.08em] md:text-5xl">{slice === "slice-1" ? "Slice 1: Place Order" : slice === "slice-2" ? "Slice 2: Manage Orders" : slice === "slice-3" ? "Slice 3: Metrics and History" : "Vertical slice document"}</h1>
           <div className="mt-8 border-t border-zinc-200 pt-8 font-inter text-base leading-relaxed md:mt-10 md:pt-10" aria-label="Vertical slice document">
             <div className={documentClass}>
