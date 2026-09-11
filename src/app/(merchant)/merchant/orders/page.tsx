@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import type { CreatedOrder } from "@/app/types/orders";
 import type { OrderItemDetail } from "@/app/types/getOrderItems";
 import { ProjectPageHeader } from "@/components/shared/ProjectPageHeader";
@@ -12,14 +12,36 @@ type ReceivedOrder = Omit<CreatedOrder, "created_at"> & {
   created_at: string;
 };
 
+type OrdersPageResponse = {
+  orders: ReceivedOrder[];
+  totalCount: number;
+  nextCursor: number | null;
+};
+
+type LoadOrdersOptions = {
+  cursor?: number;
+  append?: boolean;
+};
+
 type Board = {
   id: string;
   title: string;
   content: ReactNode;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  count: number;
+  nextCursor: number | null;
+  onLoadMore: () => void;
 };
 
-function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) {
+function BoardPanel({
+  board,
+  lightMode,
+}: {
+  board: Board;
+  lightMode: boolean;
+}) {
+  const reduceMotion = useReducedMotion();
   const mobileNavigation =
     board.id === "orders"
       ? ["→ Sent orders"]
@@ -39,15 +61,40 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
         <h2 className="font-inter text-2xl font-semibold leading-snug md:text-3xl">
           {board.title}
         </h2>
-        <div className="flex max-w-[58%] shrink-0 flex-wrap justify-end gap-2">
-          {mobileNavigation.map((navigationLabel) => (
-            <span
-              key={navigationLabel}
-              className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-sky-500 md:hidden"
-            >
-              {navigationLabel}
-            </span>
-          ))}
+
+        <div className="ml-auto flex shrink-0 items-center justify-end gap-3">
+          <div className="flex max-w-[58%] flex-wrap justify-end gap-2">
+            {mobileNavigation.map((navigationLabel) => (
+              <span
+                key={navigationLabel}
+                className="font-inter text-xs font-semibold uppercase tracking-[0.12em] text-sky-500 md:hidden"
+              >
+                {navigationLabel}
+              </span>
+            ))}
+          </div>
+
+          <div
+            className={`flex min-w-10 items-center justify-center overflow-hidden rounded-lg border px-3 py-2 font-inter text-sm font-semibold tabular-nums md:text-base ${
+              lightMode
+                ? "border-sky-200 bg-sky-50 text-sky-700"
+                : "border-sky-400/25 bg-sky-400/10 text-sky-300"
+            }`}
+            aria-live="polite"
+            aria-label={`${board.count} orders`}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={board.count}
+                initial={reduceMotion ? false : { opacity: 0, y: -4, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: 4, scale: 0.96 }}
+                transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
+              >
+                {board.count}
+              </motion.span>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -55,7 +102,25 @@ function BoardPanel({ board, lightMode }: { board: Board; lightMode: boolean }) 
         {board.isLoading ? (
           <p className="font-inter text-sm text-zinc-500 dark:text-zinc-400">Loading orders...</p>
         ) : (
-          board.content
+          <>
+            <AnimatePresence initial={false}>
+              {board.content}
+            </AnimatePresence>
+            {board.nextCursor !== null && (
+              <button
+                type="button"
+                onClick={board.onLoadMore}
+                disabled={board.isLoadingMore}
+                className={`w-full rounded-md border px-4 py-3 font-inter text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-wait disabled:opacity-60 ${
+                  lightMode
+                    ? "border-sky-600/40 text-sky-700 hover:border-sky-600 hover:bg-sky-50"
+                    : "border-sky-400/35 text-sky-300 hover:border-sky-300 hover:bg-sky-400/10"
+                }`}
+              >
+                {board.isLoadingMore ? "Loading…" : "Load 10 more"}
+              </button>
+            )}
+          </>
         )}
       </div>
     </article>
@@ -114,6 +179,7 @@ function OrderCard({
       layoutId={`order-${entry.id}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{
         opacity: { duration: 0.35, delay: index * 0.04 },
         layout: { duration: 0.8, ease: "easeInOut" },
@@ -205,6 +271,12 @@ export default function MerchantOrdersPage() {
   const [receivedOrders, setReceivedOrders] = useState<ReceivedOrder[]>([]);
   const [sentOrders, setSentOrders] = useState<ReceivedOrder[]>([]);
   const [deliveredOrders, setDeliveredOrders] = useState<ReceivedOrder[]>([]);
+  const [receivedTotalCount, setReceivedTotalCount] = useState(0);
+  const [sentTotalCount, setSentTotalCount] = useState(0);
+  const [deliveredTotalCount, setDeliveredTotalCount] = useState(0);
+  const [receivedNextCursor, setReceivedNextCursor] = useState<number | null>(null);
+  const [sentNextCursor, setSentNextCursor] = useState<number | null>(null);
+  const [deliveredNextCursor, setDeliveredNextCursor] = useState<number | null>(null);
   const [verifiedDeliveredOrderIds, setVerifiedDeliveredOrderIds] = useState<number[]>([]);
   const [newOrderIds, setNewOrderIds] = useState<number[]>([]);
   const [loadingBoards, setLoadingBoards] = useState({
@@ -212,12 +284,16 @@ export default function MerchantOrdersPage() {
     sent: true,
     delivered: true,
   });
+  const [loadingMoreBoards, setLoadingMoreBoards] = useState({
+    received: false,
+    sent: false,
+    delivered: false,
+  });
   const loadedOrderIdsByColumn = useRef(new Map<string, Set<number>>());
   const [openOrderId, setOpenOrderId] = useState<number | null>(null);
   const [orderItemsByOrderId, setOrderItemsByOrderId] = useState<Record<number, OrderItemDetail[]>>({});
   const [loadingOrderItemsId, setLoadingOrderItemsId] = useState<number | null>(null);
   const [orderItemErrors, setOrderItemErrors] = useState<Record<number, string>>({});
-
   const newestFirst = (orders: ReceivedOrder[]) =>
     [...orders].sort(
       (firstOrder, secondOrder) =>
@@ -256,6 +332,18 @@ export default function MerchantOrdersPage() {
     );
 
     updateOrders(newestFirst(orders));
+  };
+
+  const appendLoadedOrders = (
+    currentOrders: ReceivedOrder[],
+    additionalOrders: ReceivedOrder[]
+  ) => {
+    const currentIds = new Set(currentOrders.map((order) => order.id));
+    const uniqueAdditionalOrders = additionalOrders.filter(
+      (order) => !currentIds.has(order.id)
+    );
+
+    return newestFirst([...currentOrders, ...uniqueAdditionalOrders]);
   };
 
   const receivedContent = receivedOrders.map((entry, index) => (
@@ -324,29 +412,46 @@ export default function MerchantOrdersPage() {
       title: "Received",
       content: receivedContent,
       isLoading: loadingBoards.received,
+      isLoadingMore: loadingMoreBoards.received,
+      count: receivedTotalCount,
+      nextCursor: receivedNextCursor,
+      onLoadMore: () => void loadReceivedOrders({ cursor: receivedNextCursor ?? undefined, append: true }),
     },
     {
       id: "inventory",
       title: "Sent",
       content: sentContent,
       isLoading: loadingBoards.sent,
+      isLoadingMore: loadingMoreBoards.sent,
+      count: sentTotalCount,
+      nextCursor: sentNextCursor,
+      onLoadMore: () => void loadSentOrders({ cursor: sentNextCursor ?? undefined, append: true }),
     },
     {
       id: "operations",
       title: "Delivered",
       content: deliveredContent,
       isLoading: loadingBoards.delivered,
+      isLoadingMore: loadingMoreBoards.delivered,
+      count: deliveredTotalCount,
+      nextCursor: deliveredNextCursor,
+      onLoadMore: () => void loadDeliveredOrders({ cursor: deliveredNextCursor ?? undefined, append: true }),
     },
   ];
 
-  const loadReceivedOrders = async (showLoading = true) => {
-    if (showLoading) {
+  async function loadReceivedOrders({ cursor, append = false }: LoadOrdersOptions = {}) {
+    if (append) {
+      setLoadingMoreBoards((current) => ({ ...current, received: true }));
+    } else {
       setLoadingBoards((current) => ({ ...current, received: true }));
     }
 
     try {
       console.log("[received orders] requesting /api/merchant/receivedOrders");
-      const response = await fetch("/api/merchant/receivedOrders");
+      const url = cursor === undefined
+        ? "/api/merchant/receivedOrders"
+        : `/api/merchant/receivedOrders?cursor=${cursor}`;
+      const response = await fetch(url);
 
       console.log("[received orders] API response", {
         status: response.status,
@@ -357,26 +462,44 @@ export default function MerchantOrdersPage() {
         throw new Error("Unable to load received orders");
       }
 
-      const orders: ReceivedOrder[] = await response.json();
-      console.log("[received orders] received API payload", { count: orders.length });
-      applyLoadedOrders("received", orders, setReceivedOrders);
+      const result: OrdersPageResponse = await response.json();
+      console.log("[received orders] received API payload", {
+        loadedCount: result.orders.length,
+        totalCount: result.totalCount,
+      });
+
+      if (append) {
+        setReceivedOrders((current) => appendLoadedOrders(current, result.orders));
+      } else {
+        applyLoadedOrders("received", result.orders, setReceivedOrders);
+      }
+
+      setReceivedTotalCount(result.totalCount);
+      setReceivedNextCursor(result.nextCursor);
     } catch (error) {
       console.error("[received orders] error loading received orders", error);
     } finally {
-      if (showLoading) {
+      if (append) {
+        setLoadingMoreBoards((current) => ({ ...current, received: false }));
+      } else {
         setLoadingBoards((current) => ({ ...current, received: false }));
       }
     }
-  };
+  }
 
-  const loadSentOrders = async (showLoading = true) => {
-    if (showLoading) {
+  async function loadSentOrders({ cursor, append = false }: LoadOrdersOptions = {}) {
+    if (append) {
+      setLoadingMoreBoards((current) => ({ ...current, sent: true }));
+    } else {
       setLoadingBoards((current) => ({ ...current, sent: true }));
     }
 
     try {
       console.log("[sent orders] requesting /api/merchant/sentOrders");
-      const response = await fetch("/api/merchant/sentOrders");
+      const url = cursor === undefined
+        ? "/api/merchant/sentOrders"
+        : `/api/merchant/sentOrders?cursor=${cursor}`;
+      const response = await fetch(url);
 
       console.log("[sent orders] API response", {
         status: response.status,
@@ -387,26 +510,44 @@ export default function MerchantOrdersPage() {
         throw new Error("Unable to load sent orders");
       }
 
-      const orders: ReceivedOrder[] = await response.json();
-      console.log("[sent orders] received API payload", { count: orders.length });
-      applyLoadedOrders("sent", orders, setSentOrders);
+      const result: OrdersPageResponse = await response.json();
+      console.log("[sent orders] received API payload", {
+        loadedCount: result.orders.length,
+        totalCount: result.totalCount,
+      });
+
+      if (append) {
+        setSentOrders((current) => appendLoadedOrders(current, result.orders));
+      } else {
+        applyLoadedOrders("sent", result.orders, setSentOrders);
+      }
+
+      setSentTotalCount(result.totalCount);
+      setSentNextCursor(result.nextCursor);
     } catch (error) {
       console.error("[sent orders] error loading sent orders", error);
     } finally {
-      if (showLoading) {
+      if (append) {
+        setLoadingMoreBoards((current) => ({ ...current, sent: false }));
+      } else {
         setLoadingBoards((current) => ({ ...current, sent: false }));
       }
     }
-  };
+  }
 
-   const loadDeliveredOrders = async (showLoading = true) => {
-    if (showLoading) {
+  async function loadDeliveredOrders({ cursor, append = false }: LoadOrdersOptions = {}) {
+    if (append) {
+      setLoadingMoreBoards((current) => ({ ...current, delivered: true }));
+    } else {
       setLoadingBoards((current) => ({ ...current, delivered: true }));
     }
 
     try {
       console.log("[delivered orders] requesting /api/merchant/deliveredOrders");
-      const response = await fetch("/api/merchant/deliveredOrders");
+      const url = cursor === undefined
+        ? "/api/merchant/deliveredOrders"
+        : `/api/merchant/deliveredOrders?cursor=${cursor}`;
+      const response = await fetch(url);
 
       console.log("[delivered orders] API response", {
         status: response.status,
@@ -417,17 +558,30 @@ export default function MerchantOrdersPage() {
         throw new Error("Unable to load delivered orders");
       }
 
-      const orders: ReceivedOrder[] = await response.json();
-      console.log("[delivered orders] received API payload", { count: orders.length });
-      applyLoadedOrders("delivered", orders, setDeliveredOrders);
+      const result: OrdersPageResponse = await response.json();
+      console.log("[delivered orders] received API payload", {
+        loadedCount: result.orders.length,
+        totalCount: result.totalCount,
+      });
+
+      if (append) {
+        setDeliveredOrders((current) => appendLoadedOrders(current, result.orders));
+      } else {
+        applyLoadedOrders("delivered", result.orders, setDeliveredOrders);
+      }
+
+      setDeliveredTotalCount(result.totalCount);
+      setDeliveredNextCursor(result.nextCursor);
     } catch (error) {
       console.error("[delivered orders] error loading sent orders", error);
     } finally {
-      if (showLoading) {
+      if (append) {
+        setLoadingMoreBoards((current) => ({ ...current, delivered: false }));
+      } else {
         setLoadingBoards((current) => ({ ...current, delivered: false }));
       }
     }
-  };
+  }
 
   useEffect(() => {
     void loadReceivedOrders();
@@ -479,9 +633,11 @@ export default function MerchantOrdersPage() {
       currentOrders.filter((entry) => entry.id !== orderId)
     );
     setSentOrders((currentOrders) => [
-      order,
+      { ...order, status: "sent" },
       ...currentOrders.filter((entry) => entry.id !== orderId),
     ]);
+    setReceivedTotalCount((current) => Math.max(0, current - 1));
+    setSentTotalCount((current) => current + 1);
     highlightNewOrder(orderId);
 
     try {
@@ -492,7 +648,6 @@ export default function MerchantOrdersPage() {
       });
 
       if (response.ok) {
-        await loadReceivedOrders(false);
         return;
       }
     } catch (error) {
@@ -506,6 +661,8 @@ export default function MerchantOrdersPage() {
       order,
       ...currentOrders.filter((entry) => entry.id !== orderId),
     ]);
+    setReceivedTotalCount((current) => current + 1);
+    setSentTotalCount((current) => Math.max(0, current - 1));
   }
 
   async function markAsDelivered(orderId: number) {
@@ -519,9 +676,11 @@ export default function MerchantOrdersPage() {
       currentOrders.filter((entry) => entry.id !== orderId)
     );
     setDeliveredOrders((currentOrders) => [
-      order,
+      { ...order, status: "delivered" },
       ...currentOrders.filter((entry) => entry.id !== orderId),
     ]);
+    setSentTotalCount((current) => Math.max(0, current - 1));
+    setDeliveredTotalCount((current) => current + 1);
     highlightNewOrder(orderId);
 
     try {
@@ -532,8 +691,6 @@ export default function MerchantOrdersPage() {
       });
 
       if (response.ok) {
-        await loadReceivedOrders(false);
-        await loadSentOrders(false);
         return;
       }
     } catch (error) {
@@ -547,6 +704,8 @@ export default function MerchantOrdersPage() {
       order,
       ...currentOrders.filter((entry) => entry.id !== orderId),
     ]);
+    setSentTotalCount((current) => current + 1);
+    setDeliveredTotalCount((current) => Math.max(0, current - 1));
   }
 
   function verifyDelivered(orderId: number) {

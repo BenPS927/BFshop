@@ -14,31 +14,42 @@ export type AnalysisRequest = {
                }
              | { category: "location";
                  parameters: string;
-               })[];
+               }
+             | { category: "productId";
+                 parameters: number;
+               }
+             | { category: "productCategory";
+                 parameters: string;
+               }
+              )[];
 
   breakdown?: {
-    category: "gender" | "age" | "location";
+    category: "gender" | "age" | "location" | "productId" | "productCategory";
   };
 
-  comparison?: (
-    { category: "metric";
-      metric: "revenue" | "orders" | "itemsSold";
-    }
-    | { category: "period";
-        dateRange: [string, string];
-      }
-    | { category: "filter";
-        filter: ({ category: "gender";
-                   parameters: string;
+  comparison?: ({ category: "metric";
+                   metric: "revenue" | "orders" | "itemsSold";
                  }
-                 | { category: "age";
-                     parameters: [number, number];
-                   }
-                 | { category: "location";
-                     parameters: string;
-                   });
-      }
-  );
+               | { category: "period";
+                   dateRange: [string, string];
+                 }
+               | { category: "filter";
+                   filter: ({ category: "gender";
+                              parameters: string;
+                            }
+                            | { category: "age";
+                                parameters: [number, number];
+                              }
+                            | { category: "location";
+                                parameters: string;
+                              }
+                            | { category: "productId";
+                                parameters: number;
+                              }
+                            | { category: "productCategory";
+                                parameters: string;
+                              });
+                 });
 };
 
 export type Metric = AnalysisRequest["metrics"][number];

@@ -48,6 +48,7 @@ model Product {
   qrCode               String?
   images               String[]
   thumbnail            String?
+  orderItems           OrderItem[]
 }
 
 model Order {
@@ -71,6 +72,7 @@ model OrderItem {
   line_total   Float
 
   order Order @relation(fields: [order_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
 
   @@map("orderitem")
 }

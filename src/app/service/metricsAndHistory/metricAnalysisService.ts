@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client"
 import { syntheticSuburbs } from "@/data/syntheticEconomy/locations"
 import { groupOrdersByInterval } from "../../analytics/timeSeries/groupOrdersByInterval"
 import { getOrdersForAnalysis_DB_op } from "../../repositories/aiSlice/getOrdersForAnalysis_DB_op"
+import { getProductsForAnalysis_DB_op } from "../../repositories/aiSlice/getProductsForAnalysis_DB_op"
 import type {
     AnalysisRequest,
     Filter,
@@ -16,20 +17,33 @@ type BreakdownCategory = NonNullable<AnalysisRequest["breakdown"]>["category"]
 type AnalysisOrder = {
     created_at: Date
     total?: number
-    orderItems?: { quantity: number }[]
+    orderItems?: {
+        product_id: number
+        product_name: string
+        quantity: number
+        line_total: number
+        product: { title: string; category: string }
+    }[]
     customer?: { gender?: string; age?: number; address?: string }
 }
 
 type MetricScope = { key: string; label: string; metric: Metric }
-type CustomerScope = { key: string; label: string; customerWhere: Prisma.CustomerWhereInput }
+type FilterScope = {
+    key: string
+    label: string
+    customerWhere: Prisma.CustomerWhereInput
+    orderItemWhere?: Prisma.OrderItemWhereInput
+}
 type PeriodScope = { key: string; label: string; period?: Period }
+type AnalysisProduct = Awaited<ReturnType<typeof getProductsForAnalysis_DB_op>>[number]
 type BreakdownValue = {
     key: string
     label: string
     matches: (order: AnalysisOrder) => boolean
+    matchesItem?: (item: NonNullable<AnalysisOrder["orderItems"]>[number]) => boolean
 }
 
-const maximumTimeSeries = 10
+const maximumTimeSeries = 20
 
 const metricLabels: Record<Metric, string> = {
     revenue: "Revenue",
@@ -41,20 +55,24 @@ const categoryLabels: Record<BreakdownCategory, string> = {
     gender: "gender",
     age: "age group",
     location: "neighbourhood",
+    productId: "product",
+    productCategory: "product category",
 }
 
 function describeFilter(filter: Filter): string {
     if (filter.category === "age") return `age ${filter.parameters[0]}–${filter.parameters[1]}`
+    if (filter.category === "productId") return `product ${filter.parameters}`
+    if (filter.category === "productCategory") return `product category ${filter.parameters}`
     return `${filter.category} ${filter.parameters}`
 }
 
 function describeFilterValue(filter: Filter): string {
     if (filter.category === "age") return `${filter.parameters[0]}–${filter.parameters[1]}`
-    return filter.parameters
+    return String(filter.parameters)
 }
 
 function filterValueKey(filter: Filter): string {
-    return filter.category === "age" ? filter.parameters.join("-") : filter.parameters
+    return filter.category === "age" ? filter.parameters.join("-") : String(filter.parameters)
 }
 
 function formatDateRange([startDate, endDate]: [string, string]): string {
@@ -99,6 +117,32 @@ function addFilterToCustomerWhere(customerWhere: Prisma.CustomerWhereInput, filt
     }
 }
 
+function productFilterWhere(filter: Filter): Prisma.OrderItemWhereInput | undefined {
+    if (filter.category === "productId") return { product_id: filter.parameters }
+    if (filter.category === "productCategory") {
+        return { product: { category: filter.parameters } }
+    }
+    return undefined
+}
+
+function buildFilterWhere(filters: Filter[]): Pick<FilterScope, "customerWhere" | "orderItemWhere"> {
+    const customerWhere: Prisma.CustomerWhereInput = {}
+    const productConditions: Prisma.OrderItemWhereInput[] = []
+
+    filters.forEach((filter) => {
+        addFilterToCustomerWhere(customerWhere, filter)
+        const condition = productFilterWhere(filter)
+        if (condition) productConditions.push(condition)
+    })
+
+    return {
+        customerWhere,
+        ...(productConditions.length > 0
+            ? { orderItemWhere: productConditions.length === 1 ? productConditions[0] : { AND: productConditions } }
+            : {}),
+    }
+}
+
 function buildMetricScopes(request: AnalysisRequest, primaryMetric: Metric): MetricScope[] {
     const scopes: MetricScope[] = [{
         key: primaryMetric,
@@ -119,14 +163,12 @@ function buildMetricScopes(request: AnalysisRequest, primaryMetric: Metric): Met
     return scopes
 }
 
-function buildCustomerScopes(request: AnalysisRequest): CustomerScope[] {
+function buildFilterScopes(request: AnalysisRequest): FilterScope[] {
     const filters = request.filters ?? []
     const comparison = request.comparison
 
     if (comparison?.category !== "filter") {
-        const customerWhere: Prisma.CustomerWhereInput = {}
-        filters.forEach((filter) => addFilterToCustomerWhere(customerWhere, filter))
-        return [{ key: "selected", label: "Selected customers", customerWhere }]
+        return [{ key: "selected", label: "Selected data", ...buildFilterWhere(filters) }]
     }
 
     const alternative = comparison.filter
@@ -138,13 +180,10 @@ function buildCustomerScopes(request: AnalysisRequest): CustomerScope[] {
 
     const baseFilters = filters.filter((filter) => filter.category !== alternative.category)
     return [original, alternative].map((selectedFilter) => {
-        const customerWhere: Prisma.CustomerWhereInput = {}
-        baseFilters.forEach((filter) => addFilterToCustomerWhere(customerWhere, filter))
-        addFilterToCustomerWhere(customerWhere, selectedFilter)
         return {
             key: `${selectedFilter.category}:${filterValueKey(selectedFilter)}`,
             label: describeFilterValue(selectedFilter),
-            customerWhere,
+            ...buildFilterWhere([...baseFilters, selectedFilter]),
         }
     })
 }
@@ -177,7 +216,7 @@ function buildPeriodScopes(request: AnalysisRequest): PeriodScope[] {
     }]
 }
 
-function getBreakdownValues(category: BreakdownCategory): BreakdownValue[] {
+function getBreakdownValues(category: BreakdownCategory, products: AnalysisProduct[]): BreakdownValue[] {
     if (category === "gender") {
         return ["female", "male"].map((gender) => ({
             key: gender,
@@ -190,6 +229,24 @@ function getBreakdownValues(category: BreakdownCategory): BreakdownValue[] {
             key: suburb,
             label: suburb,
             matches: (order) => order.customer?.address?.toLowerCase().includes(suburb.toLowerCase()) ?? false,
+        }))
+    }
+    if (category === "productId") {
+        return products.map((product) => ({
+            key: String(product.id),
+            label: product.title,
+            matches: (order) => order.orderItems?.some((item) => item.product_id === product.id) ?? false,
+            matchesItem: (item) => item.product_id === product.id,
+        }))
+    }
+    if (category === "productCategory") {
+        const categories = [...new Set(products.map((product) => product.category))]
+            .sort((first, second) => first.localeCompare(second))
+        return categories.map((productCategory) => ({
+            key: productCategory,
+            label: productCategory[0].toUpperCase() + productCategory.slice(1),
+            matches: (order) => order.orderItems?.some((item) => item.product.category === productCategory) ?? false,
+            matchesItem: (item) => item.product.category === productCategory,
         }))
     }
 
@@ -210,11 +267,27 @@ function getBreakdownValues(category: BreakdownCategory): BreakdownValue[] {
     }))
 }
 
-function buildOrderSelect(metric: Metric, needsCustomer: boolean): Prisma.OrderSelect {
+function buildOrderSelect(
+    metric: Metric,
+    needsCustomer: boolean,
+    needsProductData: boolean,
+    orderItemWhere?: Prisma.OrderItemWhereInput,
+): Prisma.OrderSelect {
     return {
         created_at: true,
         ...(metric === "revenue" ? { total: true } : {}),
-        ...(metric === "itemsSold" ? { orderItems: { select: { quantity: true } } } : {}),
+        ...((metric === "itemsSold" || needsProductData) ? {
+            orderItems: {
+                ...(orderItemWhere ? { where: orderItemWhere } : {}),
+                select: {
+                    product_id: true,
+                    product_name: true,
+                    quantity: true,
+                    line_total: true,
+                    product: { select: { title: true, category: true } },
+                },
+            },
+        } : {}),
         ...(needsCustomer ? {
             customer: { select: { gender: true, age: true, address: true } },
         } : {}),
@@ -232,30 +305,40 @@ function dateWhere(period?: Period): Prisma.DateTimeFilter | undefined {
 async function fetchOrders(
     metric: Metric,
     periodScope: PeriodScope,
-    customerScope: CustomerScope,
+    filterScope: FilterScope,
     needsCustomer: boolean,
+    needsProductData: boolean,
 ): Promise<AnalysisOrder[]> {
     const createdAt = dateWhere(periodScope.period)
-    const hasCustomerWhere = Object.keys(customerScope.customerWhere).length > 0
+    const hasCustomerWhere = Object.keys(filterScope.customerWhere).length > 0
     const orders = await getOrdersForAnalysis_DB_op({
         where: {
             ...(createdAt ? { created_at: createdAt } : {}),
-            ...(hasCustomerWhere ? { customer: customerScope.customerWhere } : {}),
+            ...(hasCustomerWhere ? { customer: filterScope.customerWhere } : {}),
+            ...(filterScope.orderItemWhere ? { orderItems: { some: filterScope.orderItemWhere } } : {}),
         },
         orderBy: { created_at: "asc" },
-        select: buildOrderSelect(metric, needsCustomer),
+        select: buildOrderSelect(metric, needsCustomer, needsProductData, filterScope.orderItemWhere),
     })
-    return orders as AnalysisOrder[]
+    return orders as unknown as AnalysisOrder[]
 }
 
-function calculateMetric(metric: Metric, orders: AnalysisOrder[]): number {
+function calculateMetric(
+    metric: Metric,
+    orders: AnalysisOrder[],
+    useOrderItemRevenue: boolean,
+    matchesItem?: BreakdownValue["matchesItem"],
+): number {
     if (metric === "orders") return orders.length
-    if (metric === "revenue") {
+    if (metric === "revenue" && !useOrderItemRevenue && !matchesItem) {
         return orders.reduce((total, order) => total + Number(order.total ?? 0), 0)
     }
     return orders.reduce(
         (orderTotal, order) => orderTotal + (order.orderItems ?? []).reduce(
-            (itemTotal, item) => itemTotal + item.quantity,
+            (itemTotal, item) => {
+                if (matchesItem && !matchesItem(item)) return itemTotal
+                return itemTotal + (metric === "revenue" ? item.line_total : item.quantity)
+            },
             0,
         ),
         0,
@@ -270,14 +353,14 @@ function relativeIntervalLabel(interval: NonNullable<Period["interval"]>, index:
 function seriesLabel(
     metricScope: MetricScope,
     periodScope: PeriodScope,
-    customerScope: CustomerScope,
+    filterScope: FilterScope,
     breakdownValue: BreakdownValue | undefined,
-    counts: { metrics: number; periods: number; customers: number },
+    counts: { metrics: number; periods: number; filters: number },
 ): string {
     return [
         counts.metrics > 1 ? metricScope.label : "",
         counts.periods > 1 ? periodScope.label : "",
-        counts.customers > 1 ? customerScope.label : "",
+        counts.filters > 1 ? filterScope.label : "",
         breakdownValue?.label ?? "",
     ].filter(Boolean).join(" · ") || metricScope.label
 }
@@ -306,23 +389,28 @@ export async function metricAnalysisService(request: AnalysisRequest): Promise<R
     const primaryMetric = validateRequest(request)
     const metricScopes = buildMetricScopes(request, primaryMetric)
     const periodScopes = buildPeriodScopes(request)
-    const customerScopes = buildCustomerScopes(request)
-    const breakdownValues = request.breakdown ? getBreakdownValues(request.breakdown.category) : []
+    const filterScopes = buildFilterScopes(request)
+    const productBreakdown = request.breakdown?.category === "productId" || request.breakdown?.category === "productCategory"
+    const products = productBreakdown ? await getProductsForAnalysis_DB_op() : []
+    const breakdownValues = request.breakdown ? getBreakdownValues(request.breakdown.category, products) : []
     const hasInterval = Boolean(request.period?.interval)
-    const needsCustomer = Boolean(request.breakdown)
+    const needsCustomer = request.breakdown?.category === "gender" || request.breakdown?.category === "age" || request.breakdown?.category === "location"
+    const hasProductFilter = (request.filters ?? []).some((filter) => filter.category === "productId" || filter.category === "productCategory")
+        || (request.comparison?.category === "filter" && (request.comparison.filter.category === "productId" || request.comparison.filter.category === "productCategory"))
+    const needsProductData = primaryMetric === "itemsSold" || hasProductFilter || productBreakdown
     const counts = {
         metrics: metricScopes.length,
         periods: periodScopes.length,
-        customers: customerScopes.length,
+        filters: filterScopes.length,
     }
 
     const fetchedScopes = await Promise.all(
         metricScopes.flatMap((metricScope) => periodScopes.flatMap((periodScope) =>
-            customerScopes.map(async (customerScope) => ({
+            filterScopes.map(async (filterScope) => ({
                 metricScope,
                 periodScope,
-                customerScope,
-                orders: await fetchOrders(metricScope.metric, periodScope, customerScope, needsCustomer),
+                filterScope,
+                orders: await fetchOrders(metricScope.metric, periodScope, filterScope, needsCustomer, needsProductData),
             })),
         )),
     )
@@ -333,7 +421,7 @@ export async function metricAnalysisService(request: AnalysisRequest): Promise<R
 
     if (hasInterval) {
         const comparesPeriods = periodScopes.length > 1
-        series = fetchedScopes.flatMap(({ metricScope, periodScope, customerScope, orders }) => {
+        series = fetchedScopes.flatMap(({ metricScope, periodScope, filterScope, orders }) => {
             if (!periodScope.period?.interval) return []
             const intervalGroups = groupOrdersByInterval(orders, periodScope.period)
             const groups = breakdownValues.length > 0
@@ -341,14 +429,14 @@ export async function metricAnalysisService(request: AnalysisRequest): Promise<R
                 : [{ key: "all", label: "", matches: () => true }]
 
             return groups.map((group) => ({
-                key: [metricScope.key, periodScope.key, customerScope.key, group.key].join("|"),
-                label: seriesLabel(metricScope, periodScope, customerScope, group, counts),
+                key: [metricScope.key, periodScope.key, filterScope.key, group.key].join("|"),
+                label: seriesLabel(metricScope, periodScope, filterScope, group, counts),
                 yAxisKey: metricScope.key,
                 points: intervalGroups.map((intervalGroup, index) => ({
                     x: comparesPeriods
                         ? relativeIntervalLabel(periodScope.period!.interval!, index)
                         : intervalGroup.startDate,
-                    y: calculateMetric(metricScope.metric, intervalGroup.orders.filter(group.matches)),
+                    y: calculateMetric(metricScope.metric, intervalGroup.orders.filter(group.matches), Boolean(filterScope.orderItemWhere), group.matchesItem),
                 })),
             }))
         })
@@ -358,37 +446,37 @@ export async function metricAnalysisService(request: AnalysisRequest): Promise<R
         chartType = "line"
         xUnit = comparesPeriods ? "category" : "date"
     } else if (breakdownValues.length > 0) {
-        series = fetchedScopes.map(({ metricScope, periodScope, customerScope, orders }) => ({
-            key: [metricScope.key, periodScope.key, customerScope.key].join("|"),
-            label: seriesLabel(metricScope, periodScope, customerScope, undefined, counts),
+        series = fetchedScopes.map(({ metricScope, periodScope, filterScope, orders }) => ({
+            key: [metricScope.key, periodScope.key, filterScope.key].join("|"),
+            label: seriesLabel(metricScope, periodScope, filterScope, undefined, counts),
             yAxisKey: metricScope.key,
             points: breakdownValues.map((breakdownValue) => ({
                 x: breakdownValue.label,
-                y: calculateMetric(metricScope.metric, orders.filter(breakdownValue.matches)),
+                y: calculateMetric(metricScope.metric, orders.filter(breakdownValue.matches), Boolean(filterScope.orderItemWhere), breakdownValue.matchesItem),
             })),
         }))
         chartType = "bar"
         xUnit = "category"
     } else if (metricScopes.length > 1) {
-        series = fetchedScopes.map(({ metricScope, periodScope, customerScope, orders }) => ({
-            key: [metricScope.key, periodScope.key, customerScope.key].join("|"),
+        series = fetchedScopes.map(({ metricScope, periodScope, filterScope, orders }) => ({
+            key: [metricScope.key, periodScope.key, filterScope.key].join("|"),
             label: metricScope.label,
             yAxisKey: metricScope.key,
             points: [{
                 x: periodScope.label,
-                y: calculateMetric(metricScope.metric, orders),
+                y: calculateMetric(metricScope.metric, orders, Boolean(filterScope.orderItemWhere)),
             }],
         }))
         chartType = "bar"
         xUnit = "category"
-    } else if (periodScopes.length > 1 || customerScopes.length > 1) {
+    } else if (periodScopes.length > 1 || filterScopes.length > 1) {
         series = [{
             key: "comparison",
             label: metricLabels[primaryMetric],
             yAxisKey: primaryMetric,
-            points: fetchedScopes.map(({ periodScope, customerScope, metricScope, orders }) => ({
-                x: periodScopes.length > 1 ? periodScope.label : customerScope.label,
-                y: calculateMetric(metricScope.metric, orders),
+            points: fetchedScopes.map(({ periodScope, filterScope, metricScope, orders }) => ({
+                x: periodScopes.length > 1 ? periodScope.label : filterScope.label,
+                y: calculateMetric(metricScope.metric, orders, Boolean(filterScope.orderItemWhere)),
             })),
         }]
         chartType = "bar"
@@ -398,7 +486,14 @@ export async function metricAnalysisService(request: AnalysisRequest): Promise<R
             key: `metric:${primaryMetric}`,
             label: metricLabels[primaryMetric],
             yAxisKey: primaryMetric,
-            points: [{ x: periodScopes[0].label, y: calculateMetric(primaryMetric, fetchedScopes[0]?.orders ?? []) }],
+            points: [{
+                x: periodScopes[0].label,
+                y: calculateMetric(
+                    primaryMetric,
+                    fetchedScopes[0]?.orders ?? [],
+                    Boolean(fetchedScopes[0]?.filterScope.orderItemWhere),
+                ),
+            }],
         }]
         chartType = "figure"
         xUnit = "category"

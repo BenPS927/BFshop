@@ -3,7 +3,8 @@
 import { BarChart } from "@mui/x-charts/BarChart";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { ScatterChart } from "@mui/x-charts/ScatterChart";
-import { useEffect, useMemo, useRef, useState } from "react";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type {
   AnalysisRequest,
   Breakdown,
@@ -25,8 +26,14 @@ type SavedChart = {
   result: ResultsContract;
 };
 
+type ProductOption = {
+  id: number;
+  title: string;
+  category: string;
+};
+
 const metrics = ["revenue", "orders", "itemsSold"] as const satisfies readonly Metric[];
-const breakdownCategories = ["gender", "age", "location"] as const satisfies readonly Breakdown["category"][];
+const breakdownCategories = ["gender", "age", "location", "productId", "productCategory"] as const satisfies readonly Breakdown["category"][];
 const minimumDate = "2026-08-16";
 const metricLabels: Record<Metric, string> = {
   revenue: "Revenue",
@@ -37,6 +44,8 @@ const breakdownLabels: Record<Breakdown["category"], string> = {
   gender: "Gender",
   age: "Age group",
   location: "Neighbourhood",
+  productId: "Product",
+  productCategory: "Product category",
 };
 
 const currencyFormatter = new Intl.NumberFormat("en-AU", {
@@ -48,6 +57,23 @@ const currencyFormatter = new Intl.NumberFormat("en-AU", {
 const numberFormatter = new Intl.NumberFormat("en-AU", {
   maximumFractionDigits: 0,
 });
+
+const compactNumberFormatter = new Intl.NumberFormat("en-AU", {
+  maximumFractionDigits: 1,
+});
+
+const mobileNeighbourhoodLabels: Record<string, string> = {
+  Chermside: "Cherm.",
+  Carindale: "Carin.",
+  Toowong: "Toow.",
+  Paddington: "Padd.",
+  "New Farm": "N. Farm",
+  Wynnum: "Wyn.",
+  Indooroopilly: "Indoor.",
+  Coorparoo: "Coorp.",
+  Nundah: "Nun.",
+  "Mount Gravatt": "Mt Grav.",
+};
 
 const dateFormatter = new Intl.DateTimeFormat("en-AU", {
   day: "numeric",
@@ -82,40 +108,110 @@ function joinSummary(parts: string[]): string {
   return parts.length > 0 ? parts.join(", ") : "None";
 }
 
-function ResultVisualisation({ result, lightMode }: { result: ResultsContract; lightMode: boolean }) {
+function formatCompactCurrency(value: number): string {
+  if (Math.abs(value) < 1000) return currencyFormatter.format(value);
+  return `$${compactNumberFormatter.format(value / 1000)}k`;
+}
+
+function formatMobileSeriesLabel(label: string): string {
+  const dateRange = label.match(/^(\d{1,2}) ([A-Za-z]{3}) \d{4}[–-](\d{1,2}) ([A-Za-z]{3}) \d{4}$/);
+  if (!dateRange) return label;
+
+  const [, startDay, startMonth, endDay, endMonth] = dateRange;
+  return startMonth === endMonth
+    ? `${startDay}–${endDay} ${endMonth}`
+    : `${startDay} ${startMonth}–${endDay} ${endMonth}`;
+}
+
+function ResultVisualisation({
+  result,
+  lightMode,
+  compact = false,
+}: {
+  result: ResultsContract;
+  lightMode: boolean;
+  compact?: boolean;
+}) {
+  const isMobile = useMediaQuery("(max-width:639px)", { noSsr: true });
   const chartText = lightMode ? "#18181b" : "#f4f4f5";
-  const chartGrid = lightMode ? "#d4d4d8" : "rgba(255,255,255,0.14)";
-  const chartColours = ["#38bdf8", "#818cf8", "#2dd4bf", "#f59e0b"];
+  const chartGrid = lightMode ? "rgba(24,24,27,0.10)" : "rgba(255,255,255,0.08)";
+  const chartSurface = lightMode ? "rgba(14,165,233,0.025)" : "rgba(56,189,248,0.025)";
+  const chartFont = "var(--font-inter-ui), Inter, sans-serif";
+  const chartColours = [
+    "#38bdf8", "#818cf8", "#2dd4bf", "#f59e0b", "#f472b6",
+    "#a78bfa", "#fb7185", "#34d399", "#facc15", "#60a5fa",
+    "#c084fc", "#22d3ee", "#4ade80", "#fb923c", "#e879f9",
+    "#94a3b8", "#bef264", "#f87171", "#67e8f9", "#a3e635",
+  ];
+  const gradientPrefix = useId().replace(/:/g, "");
+  const barGradientIds = chartColours.map((_, index) => `${gradientPrefix}-bar-${index}`);
   const longestSeries = result.series.reduce<(typeof result.series)[number] | undefined>(
     (longest, series) => !longest || series.points.length > longest.points.length ? series : longest,
     undefined,
   );
   const points = longestSeries?.points ?? [];
   const xValues = points.map((point) => result.axes.x.unit === "date" ? formatDate(point.x) : String(point.x));
-  const formatterForAxis = (axisKey: string) => {
+  const formatterForAxis = (axisKey: string, compactCurrency = false) => {
     const axis = result.axes.y.find((candidate) => candidate.key === axisKey) ?? result.axes.y[0];
     return axis?.unit === "currency"
-      ? (value: number | null) => currencyFormatter.format(value ?? 0)
+      ? (value: number | null) => compactCurrency
+        ? formatCompactCurrency(value ?? 0)
+        : currencyFormatter.format(value ?? 0)
       : (value: number | null) => numberFormatter.format(value ?? 0);
   };
   const yAxes = result.axes.y.map((axis, index) => ({
     id: axis.key,
-    label: axis.unit === "currency" ? `${axis.label} (AUD)` : axis.label,
+    label: axis.unit === "currency" && !isMobile ? `${axis.label} (AUD)` : axis.label,
     position: index === 0 ? "left" as const : "right" as const,
-    valueFormatter: formatterForAxis(axis.key),
-    width: 80,
-    tickLabelStyle: { fill: chartText },
-    labelStyle: { fill: chartText },
+    valueFormatter: formatterForAxis(axis.key, isMobile),
+    width: isMobile ? 58 : 80,
+    tickNumber: isMobile ? 4 : undefined,
+    tickLabelStyle: { fill: chartText, fontFamily: chartFont, fontSize: isMobile ? 10 : undefined },
+    labelStyle: { fill: chartText, fontFamily: chartFont },
   }));
   const xAxisLabel = result.axes.x.unit === "date"
     ? "Date"
     : result.axes.x.unit === "category"
       ? "Category"
       : "Value";
+  const useCompactCategoryLabels = (compact || isMobile) && result.axes.x.unit === "category";
   const chartSx = {
-    "& .MuiChartsAxis-line, & .MuiChartsAxis-tick": { stroke: chartGrid },
-    "& .MuiChartsAxis-tickLabel, & .MuiChartsAxis-label": { fill: chartText },
+    fontFamily: chartFont,
+    "& .MuiChartsSurface-root": {
+      backgroundColor: chartSurface,
+      borderRadius: "10px",
+    },
+    "& .MuiChartsAxis-line, & .MuiChartsAxis-tick": { stroke: "transparent" },
+    "& text, & .MuiChartsAxis-tickLabel, & .MuiChartsAxis-label, & .MuiChartsLegend-label": {
+      fill: chartText,
+      fontFamily: chartFont,
+    },
     "& .MuiChartsGrid-line": { stroke: chartGrid },
+    "& .MuiBarChart-series path, & .MuiBarElement-root": {
+      filter: lightMode
+        ? "drop-shadow(0 2px 2px rgba(15,23,42,0.10))"
+        : "drop-shadow(0 2px 3px rgba(0,0,0,0.24))",
+    },
+    "& .MuiLineElement-root": {
+      strokeWidth: 3,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    },
+    "& .MuiAreaElement-root": {
+      fillOpacity: lightMode ? 0.08 : 0.1,
+    },
+    "& .MuiMarkElement-root": {
+      transition: "opacity 160ms ease, filter 160ms ease",
+    },
+    "& .MuiLineChart-highlight": {
+      r: 6,
+      stroke: lightMode ? "rgba(255,255,255,0.96)" : "rgba(9,9,11,0.92)",
+      strokeWidth: 2,
+      filter: lightMode
+        ? "drop-shadow(0 0 4px rgba(14,165,233,0.55))"
+        : "drop-shadow(0 0 5px rgba(125,211,252,0.72))",
+      transition: "filter 160ms ease",
+    },
   };
 
   if (result.chartType === "figure") {
@@ -134,45 +230,74 @@ function ResultVisualisation({ result, lightMode }: { result: ResultsContract; l
   if (result.chartType === "bar") {
     return (
       <BarChart
-        height={400}
+        height={isMobile ? 350 : 400}
+        borderRadius={6}
         xAxis={[{
           data: xValues,
           scaleType: "band",
-          label: xAxisLabel,
-          tickLabelInterval: "auto",
-          tickLabelStyle: { fill: chartText },
-          labelStyle: { fill: chartText },
+          label: isMobile && result.axes.x.unit === "category" ? undefined : xAxisLabel,
+          valueFormatter: isMobile && result.axes.x.unit === "category"
+            ? (value, context) => context.location === "tick"
+              ? mobileNeighbourhoodLabels[String(value)] ?? String(value)
+              : String(value)
+            : undefined,
+          tickLabelInterval: useCompactCategoryLabels ? () => true : "auto",
+          tickLabelStyle: {
+            fill: chartText,
+            fontFamily: chartFont,
+            fontSize: useCompactCategoryLabels ? (isMobile ? 9 : 10) : undefined,
+            angle: useCompactCategoryLabels ? 40 : 0,
+            textAnchor: useCompactCategoryLabels ? "start" : "middle",
+          },
+          labelStyle: { fill: chartText, fontFamily: chartFont },
+          height: useCompactCategoryLabels ? 92 : undefined,
         }]}
         yAxis={yAxes}
         series={result.series.map((series, index) => ({
           id: series.key,
-          label: series.label,
+          label: isMobile ? formatMobileSeriesLabel(series.label) : series.label,
           yAxisId: series.yAxisKey,
           data: series.points.map((point) => point.y),
-          color: chartColours[index % chartColours.length],
+          color: `url(#${barGradientIds[index % barGradientIds.length]})`,
           valueFormatter: formatterForAxis(series.yAxisKey),
         }))}
         grid={{ horizontal: true }}
         hideLegend={result.series.length <= 1}
-        margin={{ left: 12, right: 22, top: 28, bottom: 18 }}
+        margin={{ left: isMobile ? 4 : 12, right: useCompactCategoryLabels ? (isMobile ? 28 : 42) : 22, top: isMobile ? 18 : 28, bottom: useCompactCategoryLabels ? (isMobile ? 62 : 74) : 18 }}
         sx={chartSx}
-      />
+      >
+        <defs>
+          {chartColours.map((colour, index) => (
+            <linearGradient
+              key={colour}
+              id={barGradientIds[index]}
+              x1="0"
+              y1="1"
+              x2="0"
+              y2="0"
+            >
+              <stop offset="0%" stopColor={colour} stopOpacity="0.76" />
+              <stop offset="100%" stopColor={colour} stopOpacity="1" />
+            </linearGradient>
+          ))}
+        </defs>
+      </BarChart>
     );
   }
 
   if (result.chartType === "scatter") {
     return (
       <ScatterChart
-        height={400}
+        height={isMobile ? 350 : 400}
         xAxis={[{
           label: xAxisLabel,
-          tickLabelStyle: { fill: chartText },
-          labelStyle: { fill: chartText },
+          tickLabelStyle: { fill: chartText, fontFamily: chartFont },
+          labelStyle: { fill: chartText, fontFamily: chartFont },
         }]}
         yAxis={yAxes}
         series={result.series.map((series, seriesIndex) => ({
           id: series.key,
-          label: series.label,
+          label: isMobile ? formatMobileSeriesLabel(series.label) : series.label,
           yAxisId: series.yAxisKey,
           data: series.points.flatMap((point, pointIndex) => {
             const x = Number(point.x);
@@ -183,9 +308,9 @@ function ResultVisualisation({ result, lightMode }: { result: ResultsContract; l
           color: chartColours[seriesIndex % chartColours.length],
           valueFormatter: ({ x, y }) => `${numberFormatter.format(x)}, ${formatterForAxis(series.yAxisKey)(y)}`,
         }))}
-        grid={{ horizontal: true, vertical: true }}
+        grid={{ horizontal: true, vertical: false }}
         hideLegend={result.series.length <= 1}
-        margin={{ left: 12, right: 22, top: 28, bottom: 18 }}
+        margin={{ left: isMobile ? 4 : 12, right: isMobile ? 12 : 22, top: isMobile ? 18 : 28, bottom: 18 }}
         sx={chartSx}
       />
     );
@@ -193,24 +318,25 @@ function ResultVisualisation({ result, lightMode }: { result: ResultsContract; l
 
   return (
     <LineChart
-      height={400}
+      height={isMobile ? 350 : 400}
       xAxis={[{
         data: xValues,
         scaleType: "band",
         label: xAxisLabel,
         tickLabelInterval: "auto",
-        tickLabelStyle: { fill: chartText },
-        labelStyle: { fill: chartText },
+        tickLabelStyle: { fill: chartText, fontFamily: chartFont },
+        labelStyle: { fill: chartText, fontFamily: chartFont },
       }]}
       yAxis={yAxes}
       series={result.series.map((series, index) => ({
         id: series.key,
-        label: series.label,
+        label: isMobile ? formatMobileSeriesLabel(series.label) : series.label,
         yAxisId: series.yAxisKey,
         data: series.points.map((point) => point.y),
         color: chartColours[index % chartColours.length],
+        area: true,
         valueFormatter: formatterForAxis(series.yAxisKey),
-        showMark: series.points.length <= 45,
+        showMark: series.points.length <= 24,
       }))}
       grid={{ horizontal: true }}
       hideLegend={result.series.length <= 1}
@@ -222,7 +348,7 @@ function ResultVisualisation({ result, lightMode }: { result: ResultsContract; l
           disablePortal: true,
         },
       }}
-      margin={{ left: 12, right: 22, top: 28, bottom: 18 }}
+      margin={{ left: isMobile ? 4 : 12, right: isMobile ? 12 : 22, top: isMobile ? 18 : 28, bottom: 18 }}
       sx={chartSx}
     />
   );
@@ -239,6 +365,9 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
   const [minimumAge, setMinimumAge] = useState("");
   const [maximumAge, setMaximumAge] = useState("");
   const [location, setLocation] = useState("");
+  const [productId, setProductId] = useState("");
+  const [productCategory, setProductCategory] = useState("");
+  const [products, setProducts] = useState<ProductOption[]>([]);
   const [breakdownCategory, setBreakdownCategory] = useState<Breakdown["category"] | "">("");
   const [comparisonCategory, setComparisonCategory] = useState<Comparison["category"] | "">("");
   const [comparisonMetric, setComparisonMetric] = useState<Metric | "">("");
@@ -249,6 +378,8 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
   const [comparisonMinimumAge, setComparisonMinimumAge] = useState("");
   const [comparisonMaximumAge, setComparisonMaximumAge] = useState("");
   const [comparisonLocation, setComparisonLocation] = useState("");
+  const [comparisonProductId, setComparisonProductId] = useState("");
+  const [comparisonProductCategory, setComparisonProductCategory] = useState("");
   const [result, setResult] = useState<ResultsContract | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -269,9 +400,16 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
       });
     }
     if (location) selected.push({ category: "location", parameters: location });
+    if (productId) selected.push({ category: "productId", parameters: Number(productId) });
+    if (productCategory) selected.push({ category: "productCategory", parameters: productCategory });
 
     return selected;
-  }, [gender, location, maximumAge, minimumAge]);
+  }, [gender, location, maximumAge, minimumAge, productCategory, productId]);
+
+  const productCategories = useMemo(
+    () => [...new Set(products.map((product) => product.category))].sort((first, second) => first.localeCompare(second)),
+    [products],
+  );
 
   const activeFilterCategories = filters.map((filter) => filter.category);
   const availableBreakdowns = breakdownCategories.filter((category) => {
@@ -312,6 +450,12 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
     if (comparisonCategory === "filter" && comparisonFilterCategory === "location" && comparisonLocation && comparisonLocation !== location) {
       return { category: "filter", filter: { category: "location", parameters: comparisonLocation } };
     }
+    if (comparisonCategory === "filter" && comparisonFilterCategory === "productId" && comparisonProductId && comparisonProductId !== productId) {
+      return { category: "filter", filter: { category: "productId", parameters: Number(comparisonProductId) } };
+    }
+    if (comparisonCategory === "filter" && comparisonFilterCategory === "productCategory" && comparisonProductCategory && comparisonProductCategory !== productCategory) {
+      return { category: "filter", filter: { category: "productCategory", parameters: comparisonProductCategory } };
+    }
     return undefined;
   }, [
     comparisonCategory,
@@ -319,6 +463,8 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
     comparisonFilterCategory,
     comparisonGender,
     comparisonLocation,
+    comparisonProductCategory,
+    comparisonProductId,
     comparisonMaximumAge,
     comparisonMetric,
     comparisonMinimumAge,
@@ -328,6 +474,8 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
     location,
     metric,
     periodEnabled,
+    productCategory,
+    productId,
     startDate,
   ]);
 
@@ -356,6 +504,31 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
 
     document.addEventListener("pointerdown", closeOpenMenu);
     return () => document.removeEventListener("pointerdown", closeOpenMenu);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadProducts() {
+      try {
+        const response = await fetch("/api/products", { signal: controller.signal });
+        const output = await response.json();
+        if (!response.ok || !Array.isArray(output.products)) return;
+
+        setProducts(output.products.map((product: ProductOption) => ({
+          id: Number(product.id),
+          title: product.title,
+          category: product.category,
+        })));
+      } catch (caughtError) {
+        if (!(caughtError instanceof DOMException && caughtError.name === "AbortError")) {
+          console.error("Unable to load product filter options", caughtError);
+        }
+      }
+    }
+
+    void loadProducts();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -439,6 +612,8 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
     gender ? `Gender: ${gender}` : "",
     minimumAge && maximumAge ? `Age: ${minimumAge}–${maximumAge}` : "",
     location ? `Location: ${location}` : "",
+    productId ? `Product: ${products.find((product) => String(product.id) === productId)?.title ?? productId}` : "",
+    productCategory ? `Category: ${productCategory}` : "",
   ].filter(Boolean);
 
   const periodSummary = periodEnabled
@@ -477,6 +652,8 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
     setMinimumAge("");
     setMaximumAge("");
     setLocation("");
+    setProductId("");
+    setProductCategory("");
     setBreakdownCategory("");
     setComparisonCategory("");
     setComparisonMetric("");
@@ -487,6 +664,8 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
     setComparisonMinimumAge("");
     setComparisonMaximumAge("");
     setComparisonLocation("");
+    setComparisonProductId("");
+    setComparisonProductCategory("");
   }
 
   async function saveChart() {
@@ -548,9 +727,9 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
 
   return (
     <div className={workspaceMode ? "mx-auto max-w-[1400px]" : ""}>
-    <article ref={interfaceRef} className={`relative min-h-[560px] rounded-xl border p-4 md:p-6 ${workspaceMode ? "mx-auto max-w-5xl" : ""} ${panel}`}>
+    <article ref={interfaceRef} className={`relative min-h-[500px] rounded-xl border p-3 sm:min-h-[560px] sm:p-4 md:p-6 ${workspaceMode ? "mx-auto max-w-5xl" : ""} ${panel}`}>
       <header className="text-center">
-        <h2 className="font-inter text-2xl font-semibold leading-snug md:text-3xl">
+        <h2 className="font-inter text-xl font-semibold leading-snug sm:text-2xl md:text-3xl">
           {result?.title ?? `${metricLabels[metric]} over time`}
         </h2>
         {workspaceMode && (
@@ -565,12 +744,12 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
         )}
       </header>
 
-      <div className="mt-6 grid grid-cols-6 gap-2 md:grid-cols-5 md:gap-3">
+      <div className="mt-4 grid grid-cols-6 gap-1.5 sm:mt-6 sm:gap-2 md:grid-cols-5 md:gap-3">
         <details className="group relative col-span-2 md:col-span-1">
-          <summary className={`flex min-h-14 cursor-pointer list-none items-center justify-between gap-2 rounded-md border px-3 py-2 transition hover:border-sky-400 ${capsule}`}>
+          <summary className={`flex min-h-11 cursor-pointer list-none items-center justify-between gap-1 rounded-md border px-2 py-1.5 transition hover:border-sky-400 sm:min-h-14 sm:gap-2 sm:px-3 sm:py-2 ${capsule}`}>
             <span className="min-w-0">
               <span className={`block font-inter text-[10px] font-semibold uppercase tracking-[0.1em] ${muted}`}>Metric</span>
-              <span className="block truncate font-inter text-xs font-medium md:text-sm">{metricLabels[metric]}</span>
+              <span className="hidden truncate font-inter text-xs font-medium sm:block md:text-sm">{metricLabels[metric]}</span>
             </span>
             <span aria-hidden="true" className="text-sky-400 transition group-open:rotate-180">⌄</span>
           </summary>
@@ -584,10 +763,10 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
         </details>
 
         <details className="group relative col-span-2 md:col-span-1">
-          <summary className={`flex min-h-14 cursor-pointer list-none items-center justify-between gap-2 rounded-md border px-3 py-2 transition hover:border-sky-400 ${capsule}`}>
+          <summary className={`flex min-h-11 cursor-pointer list-none items-center justify-between gap-1 rounded-md border px-2 py-1.5 transition hover:border-sky-400 sm:min-h-14 sm:gap-2 sm:px-3 sm:py-2 ${capsule}`}>
             <span className="min-w-0">
               <span className={`block font-inter text-[10px] font-semibold uppercase tracking-[0.1em] ${muted}`}>Period</span>
-              <span className="block truncate font-inter text-xs font-medium md:text-sm">{periodSummary}</span>
+              <span className="hidden truncate font-inter text-xs font-medium sm:block md:text-sm">{periodSummary}</span>
             </span>
             <span aria-hidden="true" className="text-sky-400 transition group-open:rotate-180">⌄</span>
           </summary>
@@ -621,10 +800,10 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
         </details>
 
         <details className="group relative col-span-2 md:col-span-1">
-          <summary className={`flex min-h-14 cursor-pointer list-none items-center justify-between gap-2 rounded-md border px-3 py-2 transition hover:border-sky-400 ${capsule}`}>
+          <summary className={`flex min-h-11 cursor-pointer list-none items-center justify-between gap-1 rounded-md border px-2 py-1.5 transition hover:border-sky-400 sm:min-h-14 sm:gap-2 sm:px-3 sm:py-2 ${capsule}`}>
             <span className="min-w-0">
               <span className={`block font-inter text-[10px] font-semibold uppercase tracking-[0.1em] ${muted}`}>Filters</span>
-              <span className="block truncate font-inter text-xs font-medium md:text-sm">{joinSummary(activeFilters)}</span>
+              <span className="hidden truncate font-inter text-xs font-medium sm:block md:text-sm">{joinSummary(activeFilters)}</span>
             </span>
             <span aria-hidden="true" className="text-sky-400 transition group-open:rotate-180">⌄</span>
           </summary>
@@ -654,17 +833,31 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
                 {syntheticSuburbs.map((suburb) => <option key={suburb} value={suburb}>{suburb}</option>)}
               </select>
             </label>
-            <button type="button" onClick={() => { setGender(""); setMinimumAge(""); setMaximumAge(""); setLocation(""); }} className="font-inter text-xs font-medium text-sky-400 hover:text-sky-300">
+            <label className="block font-inter text-xs font-medium">
+              Product
+              <select value={productId} onChange={(event) => setProductId(event.target.value)} className={`mt-1 w-full rounded-md border p-2 font-inter text-sm ${field}`}>
+                <option value="">Any</option>
+                {products.map((product) => <option key={product.id} value={product.id}>{product.title}</option>)}
+              </select>
+            </label>
+            <label className="block font-inter text-xs font-medium">
+              Product category
+              <select value={productCategory} onChange={(event) => setProductCategory(event.target.value)} className={`mt-1 w-full rounded-md border p-2 font-inter text-sm ${field}`}>
+                <option value="">Any</option>
+                {productCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={() => { setGender(""); setMinimumAge(""); setMaximumAge(""); setLocation(""); setProductId(""); setProductCategory(""); }} className="font-inter text-xs font-medium text-sky-400 hover:text-sky-300">
               Clear filters
             </button>
           </div>
         </details>
 
         <details className="group relative col-span-3 md:col-span-1">
-          <summary className={`flex min-h-14 cursor-pointer list-none items-center justify-between gap-2 rounded-md border px-3 py-2 transition hover:border-sky-400 ${capsule}`}>
+          <summary className={`flex min-h-11 cursor-pointer list-none items-center justify-between gap-1 rounded-md border px-2 py-1.5 transition hover:border-sky-400 sm:min-h-14 sm:gap-2 sm:px-3 sm:py-2 ${capsule}`}>
             <span className="min-w-0">
               <span className={`block font-inter text-[10px] font-semibold uppercase tracking-[0.1em] ${muted}`}>Breakdown</span>
-              <span className="block truncate font-inter text-xs font-medium md:text-sm">{breakdownCategory ? breakdownLabels[breakdownCategory] : "None"}</span>
+              <span className="hidden truncate font-inter text-xs font-medium sm:block md:text-sm">{breakdownCategory ? breakdownLabels[breakdownCategory] : "None"}</span>
             </span>
             <span aria-hidden="true" className="text-sky-400 transition group-open:rotate-180">⌄</span>
           </summary>
@@ -684,10 +877,10 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
         </details>
 
         <details className="group relative col-span-3 md:col-span-1">
-          <summary className={`flex min-h-14 cursor-pointer list-none items-center justify-between gap-2 rounded-md border px-3 py-2 transition hover:border-sky-400 ${capsule}`}>
+          <summary className={`flex min-h-11 cursor-pointer list-none items-center justify-between gap-1 rounded-md border px-2 py-1.5 transition hover:border-sky-400 sm:min-h-14 sm:gap-2 sm:px-3 sm:py-2 ${capsule}`}>
             <span className="min-w-0">
               <span className={`block font-inter text-[10px] font-semibold uppercase tracking-[0.1em] ${muted}`}>Compare</span>
-              <span className="block truncate font-inter text-xs font-medium md:text-sm">{comparisonSummary}</span>
+              <span className="hidden truncate font-inter text-xs font-medium sm:block md:text-sm">{comparisonSummary}</span>
             </span>
             <span aria-hidden="true" className="text-sky-400 transition group-open:rotate-180">⌄</span>
           </summary>
@@ -759,6 +952,24 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
                     </select>
                   </label>
                 )}
+                {comparisonFilterCategory === "productId" && (
+                  <label className="block font-inter text-xs font-medium">
+                    Compare with
+                    <select value={comparisonProductId} onChange={(event) => setComparisonProductId(event.target.value)} className={`mt-1 w-full rounded-md border p-2 font-inter text-sm ${field}`}>
+                      <option value="">Choose a product</option>
+                      {products.filter((product) => String(product.id) !== productId).map((product) => <option key={product.id} value={product.id}>{product.title}</option>)}
+                    </select>
+                  </label>
+                )}
+                {comparisonFilterCategory === "productCategory" && (
+                  <label className="block font-inter text-xs font-medium">
+                    Compare with
+                    <select value={comparisonProductCategory} onChange={(event) => setComparisonProductCategory(event.target.value)} className={`mt-1 w-full rounded-md border p-2 font-inter text-sm ${field}`}>
+                      <option value="">Choose a product category</option>
+                      {productCategories.filter((category) => category !== productCategory).map((category) => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                  </label>
+                )}
               </>
             )}
 
@@ -769,13 +980,13 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
         </details>
       </div>
 
-      <div className="relative mt-6 min-h-[400px] overflow-hidden rounded-lg border border-current/10 md:mt-8">
+      <div className="relative mt-4 min-h-[350px] overflow-hidden rounded-lg sm:mt-6 sm:min-h-[400px] md:mt-8">
         {error ? (
-          <div className="flex min-h-[400px] items-center justify-center p-6 text-center font-inter text-sm text-rose-400">{error}</div>
+          <div className="flex min-h-[350px] items-center justify-center p-4 text-center font-inter text-sm text-rose-400 sm:min-h-[400px] sm:p-6">{error}</div>
         ) : isLoading && result === null ? (
-          <div className={`flex min-h-[400px] items-center justify-center font-inter text-sm ${muted}`}>Loading chart…</div>
+          <div className={`flex min-h-[350px] items-center justify-center font-inter text-sm sm:min-h-[400px] ${muted}`}>Loading chart…</div>
         ) : points.length === 0 ? (
-          <div className={`flex min-h-[400px] items-center justify-center p-6 text-center font-inter text-sm ${muted}`}>No data was found for this configuration.</div>
+          <div className={`flex min-h-[350px] items-center justify-center p-4 text-center font-inter text-sm sm:min-h-[400px] sm:p-6 ${muted}`}>No data was found for this configuration.</div>
         ) : (
           <>
             {result && <ResultVisualisation result={result} lightMode={lightMode} />}
@@ -825,8 +1036,8 @@ export function IntelligenceInterface({ lightMode, workspaceMode = false }: Inte
                     {deletingSavedChartId === savedChart.id ? "Deleting…" : "Delete"}
                   </button>
                 </header>
-                <div className="mt-6 min-h-[400px] overflow-hidden rounded-lg border border-current/10">
-                  <ResultVisualisation result={savedChart.result} lightMode={lightMode} />
+                <div className="mt-6 min-h-[400px] overflow-hidden rounded-lg">
+                  <ResultVisualisation result={savedChart.result} lightMode={lightMode} compact />
                 </div>
               </article>
             ))}
