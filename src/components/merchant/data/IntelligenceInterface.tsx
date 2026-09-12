@@ -3,6 +3,7 @@
 import { BarChart } from "@mui/x-charts/BarChart";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { ScatterChart } from "@mui/x-charts/ScatterChart";
+import Slider from "@mui/material/Slider";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type {
@@ -32,13 +33,33 @@ type ProductOption = {
   category: string;
 };
 
-const metrics = ["revenue", "orders", "itemsSold"] as const satisfies readonly Metric[];
+type LineVisibilityState = {
+  resultKey: string;
+  visibleSeriesKeys: string[];
+};
+
+type ChartZoomState = {
+  resultKey: string;
+  range: [number, number];
+};
+
+const metrics = [
+  "revenue",
+  "orders",
+  "itemsSold",
+  "averageOrderValue",
+  "averageItemsPerOrder",
+  "averageItemValue",
+] as const satisfies readonly Metric[];
 const breakdownCategories = ["gender", "age", "location", "productId", "productCategory"] as const satisfies readonly Breakdown["category"][];
 const minimumDate = "2026-08-16";
 const metricLabels: Record<Metric, string> = {
   revenue: "Revenue",
   orders: "Orders",
   itemsSold: "Items sold",
+  averageOrderValue: "Average order value",
+  averageItemsPerOrder: "Average items per order",
+  averageItemValue: "Average item value",
 };
 const breakdownLabels: Record<Breakdown["category"], string> = {
   gender: "Gender",
@@ -56,6 +77,10 @@ const currencyFormatter = new Intl.NumberFormat("en-AU", {
 
 const numberFormatter = new Intl.NumberFormat("en-AU", {
   maximumFractionDigits: 0,
+});
+
+const decimalNumberFormatter = new Intl.NumberFormat("en-AU", {
+  maximumFractionDigits: 2,
 });
 
 const compactNumberFormatter = new Intl.NumberFormat("en-AU", {
@@ -135,7 +160,6 @@ function ResultVisualisation({
   const isMobile = useMediaQuery("(max-width:639px)", { noSsr: true });
   const chartText = lightMode ? "#18181b" : "#f4f4f5";
   const chartGrid = lightMode ? "rgba(24,24,27,0.10)" : "rgba(255,255,255,0.08)";
-  const chartSurface = lightMode ? "rgba(14,165,233,0.025)" : "rgba(56,189,248,0.025)";
   const chartFont = "var(--font-inter-ui), Inter, sans-serif";
   const chartColours = [
     "#38bdf8", "#818cf8", "#2dd4bf", "#f59e0b", "#f472b6",
@@ -151,13 +175,32 @@ function ResultVisualisation({
   );
   const points = longestSeries?.points ?? [];
   const xValues = points.map((point) => result.axes.x.unit === "date" ? formatDate(point.x) : String(point.x));
+  const zoomResultKey = `${result.chartType}:${result.metric}:${result.interval ?? "total"}:${result.series.map((series) => `${series.key}:${series.points.length}`).join("|")}`;
+  const [chartZoom, setChartZoom] = useState<ChartZoomState>({
+    resultKey: zoomResultKey,
+    range: [0, 100],
+  });
+  const zoomRange = chartZoom.resultKey === zoomResultKey ? chartZoom.range : [0, 100] as [number, number];
+  const zoomStartIndex = points.length > 1
+    ? Math.floor((zoomRange[0] / 100) * (points.length - 1))
+    : 0;
+  const zoomEndIndex = points.length > 1
+    ? Math.ceil((zoomRange[1] / 100) * (points.length - 1)) + 1
+    : points.length;
+  const displayedXValues = xValues.slice(zoomStartIndex, zoomEndIndex);
+  const isZoomed = zoomRange[0] > 0 || zoomRange[1] < 100;
+  const canZoom = result.chartType !== "figure" && points.length > 2;
+  const displayedPoints = (series: (typeof result.series)[number]) =>
+    series.points.slice(zoomStartIndex, zoomEndIndex);
   const formatterForAxis = (axisKey: string, compactCurrency = false) => {
     const axis = result.axes.y.find((candidate) => candidate.key === axisKey) ?? result.axes.y[0];
     return axis?.unit === "currency"
       ? (value: number | null) => compactCurrency
         ? formatCompactCurrency(value ?? 0)
         : currencyFormatter.format(value ?? 0)
-      : (value: number | null) => numberFormatter.format(value ?? 0);
+      : axis?.unit === "number"
+        ? (value: number | null) => decimalNumberFormatter.format(value ?? 0)
+        : (value: number | null) => numberFormatter.format(value ?? 0);
   };
   const yAxes = result.axes.y.map((axis, index) => ({
     id: axis.key,
@@ -175,12 +218,54 @@ function ResultVisualisation({
       ? "Category"
       : "Value";
   const useCompactCategoryLabels = (compact || isMobile) && result.axes.x.unit === "category";
+  const lineResultKey = `${result.metric}:${result.interval ?? "total"}:${result.series.map((series) => series.key).join("|")}`;
+  const rankedLineSeries = [...result.series].sort((first, second) => {
+    const firstTotal = first.points.reduce((total, point) => total + point.y, 0);
+    const secondTotal = second.points.reduce((total, point) => total + point.y, 0);
+    return secondTotal - firstTotal;
+  });
+  const defaultVisibleSeriesKeys = (result.series.length > 5 ? rankedLineSeries.slice(0, 5) : result.series)
+    .map((series) => series.key);
+  const [lineVisibility, setLineVisibility] = useState<LineVisibilityState>({
+    resultKey: lineResultKey,
+    visibleSeriesKeys: defaultVisibleSeriesKeys,
+  });
+  const visibleSeriesKeys = lineVisibility.resultKey === lineResultKey
+    ? lineVisibility.visibleSeriesKeys
+    : defaultVisibleSeriesKeys;
+  const visibleSeriesKeySet = new Set(visibleSeriesKeys);
+  const visibleLineSeries = result.series
+    .map((series, index) => ({ series, index }))
+    .filter(({ series }) => visibleSeriesKeySet.has(series.key));
+
+  function showRankedSeries(count: number, fromBottom = false) {
+    const selected = fromBottom
+      ? rankedLineSeries.slice(-count)
+      : rankedLineSeries.slice(0, count);
+    setLineVisibility({
+      resultKey: lineResultKey,
+      visibleSeriesKeys: selected.map((series) => series.key),
+    });
+  }
+
+  function toggleLineSeries(seriesKey: string) {
+    setLineVisibility((current) => {
+      const currentKeys = current.resultKey === lineResultKey
+        ? current.visibleSeriesKeys
+        : defaultVisibleSeriesKeys;
+      const isVisible = currentKeys.includes(seriesKey);
+      if (isVisible && currentKeys.length === 1) return current;
+
+      return {
+        resultKey: lineResultKey,
+        visibleSeriesKeys: isVisible
+          ? currentKeys.filter((key) => key !== seriesKey)
+          : [...currentKeys, seriesKey],
+      };
+    });
+  }
   const chartSx = {
     fontFamily: chartFont,
-    "& .MuiChartsSurface-root": {
-      backgroundColor: chartSurface,
-      borderRadius: "10px",
-    },
     "& .MuiChartsAxis-line, & .MuiChartsAxis-tick": { stroke: "transparent" },
     "& text, & .MuiChartsAxis-tickLabel, & .MuiChartsAxis-label, & .MuiChartsLegend-label": {
       fill: chartText,
@@ -197,9 +282,6 @@ function ResultVisualisation({
       strokeLinecap: "round",
       strokeLinejoin: "round",
     },
-    "& .MuiAreaElement-root": {
-      fillOpacity: lightMode ? 0.08 : 0.1,
-    },
     "& .MuiMarkElement-root": {
       transition: "opacity 160ms ease, filter 160ms ease",
     },
@@ -213,6 +295,44 @@ function ResultVisualisation({
       transition: "filter 160ms ease",
     },
   };
+  const zoomControl = canZoom ? (
+    <div className="mb-2 flex items-center gap-3 px-2 sm:mb-3 sm:px-3">
+      <span className={`shrink-0 font-inter text-xs font-medium ${lightMode ? "text-zinc-600" : "text-zinc-400"}`}>
+        Zoom
+      </span>
+      <Slider
+        value={zoomRange}
+        onChange={(_, value: number | number[]) => {
+          if (!Array.isArray(value)) return;
+          setChartZoom({ resultKey: zoomResultKey, range: [value[0], value[1]] });
+        }}
+        min={0}
+        max={100}
+        step={1}
+        disableSwap
+        aria-label="Visible chart range"
+        sx={{
+          color: lightMode ? "#0284c7" : "#38bdf8",
+          height: 3,
+          "& .MuiSlider-thumb": { width: 13, height: 13 },
+          "& .MuiSlider-rail": { opacity: lightMode ? 0.18 : 0.24 },
+        }}
+      />
+      {isZoomed && (
+        <button
+          type="button"
+          onClick={() => setChartZoom({ resultKey: zoomResultKey, range: [0, 100] })}
+          className={`shrink-0 rounded-md border px-2 py-1 font-inter text-xs font-medium transition duration-150 motion-reduce:transition-none ${
+            lightMode
+              ? "border-zinc-300 text-zinc-600 hover:border-sky-500 hover:text-sky-700"
+              : "border-white/15 text-zinc-400 hover:border-sky-400 hover:text-sky-300"
+          }`}
+        >
+          Reset
+        </button>
+      )}
+    </div>
+  ) : null;
 
   if (result.chartType === "figure") {
     const value = points[0]?.y;
@@ -229,11 +349,13 @@ function ResultVisualisation({
 
   if (result.chartType === "bar") {
     return (
-      <BarChart
+      <div>
+        {zoomControl}
+        <BarChart
         height={isMobile ? 350 : 400}
         borderRadius={6}
         xAxis={[{
-          data: xValues,
+          data: displayedXValues,
           scaleType: "band",
           label: isMobile && result.axes.x.unit === "category" ? undefined : xAxisLabel,
           valueFormatter: isMobile && result.axes.x.unit === "category"
@@ -257,7 +379,7 @@ function ResultVisualisation({
           id: series.key,
           label: isMobile ? formatMobileSeriesLabel(series.label) : series.label,
           yAxisId: series.yAxisKey,
-          data: series.points.map((point) => point.y),
+          data: displayedPoints(series).map((point) => point.y),
           color: `url(#${barGradientIds[index % barGradientIds.length]})`,
           valueFormatter: formatterForAxis(series.yAxisKey),
         }))}
@@ -281,13 +403,16 @@ function ResultVisualisation({
             </linearGradient>
           ))}
         </defs>
-      </BarChart>
+        </BarChart>
+      </div>
     );
   }
 
   if (result.chartType === "scatter") {
     return (
-      <ScatterChart
+      <div>
+        {zoomControl}
+        <ScatterChart
         height={isMobile ? 350 : 400}
         xAxis={[{
           label: xAxisLabel,
@@ -299,7 +424,7 @@ function ResultVisualisation({
           id: series.key,
           label: isMobile ? formatMobileSeriesLabel(series.label) : series.label,
           yAxisId: series.yAxisKey,
-          data: series.points.flatMap((point, pointIndex) => {
+          data: displayedPoints(series).flatMap((point, pointIndex) => {
             const x = Number(point.x);
             return Number.isFinite(x)
               ? [{ id: `${series.key}:${pointIndex}`, x, y: point.y }]
@@ -312,34 +437,101 @@ function ResultVisualisation({
         hideLegend={result.series.length <= 1}
         margin={{ left: isMobile ? 4 : 12, right: isMobile ? 12 : 22, top: isMobile ? 18 : 28, bottom: 18 }}
         sx={chartSx}
-      />
+        />
+      </div>
     );
   }
 
   return (
-    <LineChart
+    <div>
+      {result.series.length > 1 && (
+        <div className="mb-3 space-y-2 px-1 sm:mb-4 sm:px-2">
+          {result.series.length > 5 && <div className="flex flex-wrap gap-2">
+            {[
+              { label: "Top 5", action: () => showRankedSeries(5) },
+              { label: "Top 10", action: () => showRankedSeries(10) },
+              { label: "Bottom 10", action: () => showRankedSeries(10, true) },
+              { label: "Bottom 5", action: () => showRankedSeries(5, true) },
+              {
+                label: "Show all",
+                action: () => setLineVisibility({
+                  resultKey: lineResultKey,
+                  visibleSeriesKeys: result.series.map((series) => series.key),
+                }),
+              },
+            ].map((control) => (
+              <button
+                key={control.label}
+                type="button"
+                onClick={control.action}
+                className={`rounded-md border px-2.5 py-1.5 font-inter text-xs font-medium transition duration-150 motion-reduce:transition-none ${
+                  lightMode
+                    ? "border-zinc-300 bg-white text-zinc-700 hover:border-sky-400 hover:text-sky-600"
+                    : "border-white/15 bg-white/[0.04] text-zinc-300 hover:border-sky-400 hover:text-sky-300"
+                }`}
+              >
+                {control.label}
+              </button>
+            ))}
+          </div>}
+
+          <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto pr-1" role="group" aria-label="Chart series">
+            {result.series.map((series, index) => {
+              const isVisible = visibleSeriesKeySet.has(series.key);
+              const isOnlyVisibleSeries = isVisible && visibleSeriesKeys.length === 1;
+              return (
+                <button
+                  key={series.key}
+                  type="button"
+                  aria-pressed={isVisible}
+                  aria-disabled={isOnlyVisibleSeries}
+                  onClick={() => toggleLineSeries(series.key)}
+                  className={`flex items-center gap-1.5 rounded-md border px-2 py-1 font-inter text-[11px] font-medium transition duration-150 motion-reduce:transition-none ${
+                    isVisible
+                      ? lightMode
+                        ? "border-zinc-300 bg-zinc-50 text-zinc-800"
+                        : "border-white/15 bg-white/[0.06] text-zinc-100"
+                      : lightMode
+                        ? "border-zinc-200 bg-transparent text-zinc-400 opacity-65"
+                        : "border-white/10 bg-transparent text-zinc-500 opacity-65"
+                  } ${isOnlyVisibleSeries ? "cursor-not-allowed" : "hover:border-sky-400"}`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: chartColours[index % chartColours.length] }}
+                  />
+                  {isMobile ? formatMobileSeriesLabel(series.label) : series.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {zoomControl}
+      <LineChart
       height={isMobile ? 350 : 400}
       xAxis={[{
-        data: xValues,
-        scaleType: "band",
+        data: displayedXValues,
+        scaleType: "point",
         label: xAxisLabel,
         tickLabelInterval: "auto",
         tickLabelStyle: { fill: chartText, fontFamily: chartFont },
         labelStyle: { fill: chartText, fontFamily: chartFont },
       }]}
       yAxis={yAxes}
-      series={result.series.map((series, index) => ({
+      series={visibleLineSeries.map(({ series, index }) => ({
         id: series.key,
         label: isMobile ? formatMobileSeriesLabel(series.label) : series.label,
         yAxisId: series.yAxisKey,
-        data: series.points.map((point) => point.y),
+        data: displayedPoints(series).map((point) => point.y),
         color: chartColours[index % chartColours.length],
-        area: true,
         valueFormatter: formatterForAxis(series.yAxisKey),
         showMark: series.points.length <= 24,
       }))}
       grid={{ horizontal: true }}
-      hideLegend={result.series.length <= 1}
+      hideLegend
       slotProps={{
         tooltip: {
           trigger: "axis",
@@ -350,7 +542,8 @@ function ResultVisualisation({
       }}
       margin={{ left: isMobile ? 4 : 12, right: isMobile ? 12 : 22, top: isMobile ? 18 : 28, bottom: 18 }}
       sx={chartSx}
-    />
+      />
+    </div>
   );
 }
 

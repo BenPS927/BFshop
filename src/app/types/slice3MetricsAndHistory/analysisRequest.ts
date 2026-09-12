@@ -1,5 +1,5 @@
 export type AnalysisRequest = {
-  metrics: ("revenue" | "orders" | "itemsSold")[];
+  metrics: ("revenue" | "orders" | "itemsSold" | "averageOrderValue" | "averageItemsPerOrder" | "averageItemValue")[];
 
   period?: {
     dateRange: [string, string];
@@ -28,7 +28,7 @@ export type AnalysisRequest = {
   };
 
   comparison?: ({ category: "metric";
-                   metric: "revenue" | "orders" | "itemsSold";
+                   metric: "revenue" | "orders" | "itemsSold" | "averageOrderValue" | "averageItemsPerOrder" | "averageItemValue";
                  }
                | { category: "period";
                    dateRange: [string, string];
@@ -53,7 +53,10 @@ export type AnalysisRequest = {
 };
 
 export type Metric = AnalysisRequest["metrics"][number];
-export type PersistedMetric = Metric;
+export type PersistedMetric =
+  | "revenue"
+  | "orders"
+  | "itemsSold";
 export type Period = NonNullable<AnalysisRequest["period"]>;
 export type Filter = NonNullable<AnalysisRequest["filters"]>[number];
 export type Breakdown = NonNullable<AnalysisRequest["breakdown"]>;

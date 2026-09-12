@@ -49,6 +49,9 @@ const metricLabels: Record<Metric, string> = {
     revenue: "Revenue",
     orders: "Orders",
     itemsSold: "Items sold",
+    averageOrderValue: "Average order value",
+    averageItemsPerOrder: "Average items per order",
+    averageItemValue: "Average item value",
 }
 
 const categoryLabels: Record<BreakdownCategory, string> = {
@@ -273,10 +276,21 @@ function buildOrderSelect(
     needsProductData: boolean,
     orderItemWhere?: Prisma.OrderItemWhereInput,
 ): Prisma.OrderSelect {
+    const needsRevenue =
+        metric === "revenue" ||
+        metric === "averageOrderValue" ||
+        metric === "averageItemValue"
+
+    const needsOrderItems =
+        metric === "itemsSold" ||
+        metric === "averageItemsPerOrder" ||
+        metric === "averageItemValue" ||
+        needsProductData
+
     return {
         created_at: true,
-        ...(metric === "revenue" ? { total: true } : {}),
-        ...((metric === "itemsSold" || needsProductData) ? {
+        ...(needsRevenue ? { total: true } : {}),
+        ...(needsOrderItems ? {
             orderItems: {
                 ...(orderItemWhere ? { where: orderItemWhere } : {}),
                 select: {
@@ -323,6 +337,44 @@ async function fetchOrders(
     return orders as unknown as AnalysisOrder[]
 }
 
+function calculateRevenue(
+  orders: AnalysisOrder[],
+  useOrderItemRevenue: boolean,
+  matchesItem?: BreakdownValue["matchesItem"],
+): number {
+  if (!useOrderItemRevenue && !matchesItem) {
+    return orders.reduce(
+      (total, order) => total + Number(order.total ?? 0),
+      0,
+    );
+  }
+
+  return orders.reduce(
+    (orderTotal, order) =>
+      orderTotal +
+      (order.orderItems ?? []).reduce((itemTotal, item) => {
+        if (matchesItem && !matchesItem(item)) return itemTotal;
+        return itemTotal + item.line_total;
+      }, 0),
+    0,
+  );
+}
+
+function calculateItemsSold(
+  orders: AnalysisOrder[],
+  matchesItem?: BreakdownValue["matchesItem"],
+): number {
+  return orders.reduce(
+    (orderTotal, order) =>
+      orderTotal +
+      (order.orderItems ?? []).reduce((itemTotal, item) => {
+        if (matchesItem && !matchesItem(item)) return itemTotal;
+        return itemTotal + item.quantity;
+      }, 0),
+    0,
+  );
+}
+
 function calculateMetric(
     metric: Metric,
     orders: AnalysisOrder[],
@@ -330,19 +382,27 @@ function calculateMetric(
     matchesItem?: BreakdownValue["matchesItem"],
 ): number {
     if (metric === "orders") return orders.length
-    if (metric === "revenue" && !useOrderItemRevenue && !matchesItem) {
-        return orders.reduce((total, order) => total + Number(order.total ?? 0), 0)
+    if (metric === "revenue") {
+        return calculateRevenue(orders, useOrderItemRevenue, matchesItem)
     }
-    return orders.reduce(
-        (orderTotal, order) => orderTotal + (order.orderItems ?? []).reduce(
-            (itemTotal, item) => {
-                if (matchesItem && !matchesItem(item)) return itemTotal
-                return itemTotal + (metric === "revenue" ? item.line_total : item.quantity)
-            },
-            0,
-        ),
-        0,
-    )
+    if (metric === "itemsSold") {
+        return calculateItemsSold(orders, matchesItem)
+    }
+    if (metric === "averageOrderValue") {
+        return orders.length === 0
+            ? 0
+            : calculateRevenue(orders, useOrderItemRevenue, matchesItem) / orders.length
+    }
+    if (metric === "averageItemsPerOrder") {
+        return orders.length === 0
+            ? 0
+            : calculateItemsSold(orders, matchesItem) / orders.length
+    }
+
+    const itemsSold = calculateItemsSold(orders, matchesItem)
+    return itemsSold === 0
+        ? 0
+        : calculateRevenue(orders, useOrderItemRevenue, matchesItem) / itemsSold
 }
 
 function relativeIntervalLabel(interval: NonNullable<Period["interval"]>, index: number): string {
@@ -509,7 +569,13 @@ export async function metricAnalysisService(request: AnalysisRequest): Promise<R
             y: metricScopes.map((metricScope) => ({
                 key: metricScope.key,
                 label: metricScope.label,
-                unit: metricScope.metric === "revenue" ? "currency" as const : "count" as const,
+                unit: metricScope.metric === "revenue" ||
+                    metricScope.metric === "averageOrderValue" ||
+                    metricScope.metric === "averageItemValue"
+                    ? "currency" as const
+                    : metricScope.metric === "averageItemsPerOrder"
+                        ? "number" as const
+                        : "count" as const,
             })),
         },
         series,

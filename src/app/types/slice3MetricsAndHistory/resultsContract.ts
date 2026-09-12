@@ -1,7 +1,7 @@
 export type ResultsContract = {
   title: string;
   chartType: "figure" | "bar" | "line" | "scatter";
-  metric: "revenue" | "orders" | "itemsSold";
+  metric: "revenue" | "orders" | "itemsSold" | "averageOrderValue" | "averageItemsPerOrder" | "averageItemValue";
   interval?: "day" | "week" | "month";
   axes: { x: { unit: "date" | "number" | "category"; };
           y: { key: string;
